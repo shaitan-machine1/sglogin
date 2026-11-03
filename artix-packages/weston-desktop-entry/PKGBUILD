@@ -1,4 +1,4 @@
-pkgname=sglogin-weston
+pkgname=sglogin-weston-desktop-entry
 pkgver=0.1.0
 pkgrel=1
 pkgdesc='Separate context-managed Weston entrypoint (no desktop supervisor)'

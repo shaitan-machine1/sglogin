@@ -16,9 +16,8 @@ No installation, service changes, or deployment is performed by validation.
 - `greetd-multiseatd`: managed greetd 0.10.3, exact public upstream plus the
   complete `greetd/managed.patch`; isolated exec'd PAM workers, stock ReGreet
   inside Cage. No dependency on an unpublished fork or local source checkout.
-- `cage`: unmodified 0.3.1; selected wlroots0.20 0.20.2 with C libseat backend.
-- `greetd-regreet`: unmodified ReGreet 0.5.0, normal greetd protocol.
-- `sglogin-weston`: separate trusted Weston entrypoint and distinct Wayland
+- `sglogin-weston-desktop-entry` (`weston-desktop-entry/`): trusted launcher and
+  distinct Wayland
   session entry. Depends on Weston and multiseat; ordinary Weston is unchanged.
 - `sessiond-s6`, `multiseat-s6`, `greetd-s6`: independent system service outputs.
 - `s6-user-service-manager`, optional disabled `dbus-s6-user` and
@@ -34,7 +33,12 @@ cd PACKAGE_DIRECTORY
 makepkg --cleanbuild
 ```
 
-Build libseat/multiseat/sessiond/loginctl and the selected greeter/session
+Install normal distro `cage`, `greetd-regreet` and `weston` packages; none is
+patched or rebuilt by these recipes. Verify the selected Cage/wlroots uses the
+maintained C libseat and consumes inherited SEATD_FD. The integration tests keep
+explicit reproducible source inputs independently of distro packaging.
+
+Build libseat/multiseat/sessiond/loginctl and the selected greeter/desktop-entry
 packages before service outputs. Sources including local files deliberately use
 SKIP checksums in these build-only recipes; exact remote Git revisions and the
 version-controlled maintained patch define the input set.

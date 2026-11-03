@@ -8,7 +8,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 root = Path(__file__).resolve().parent.parent
-source = (root/'weston/sglogin-weston').read_text()
+source = (root/'weston-desktop-entry/sglogin-weston').read_text()
 assert source.count('/usr/libexec/multiseatd/with-seat') == 1
 assert source.count('/usr/bin/weston') == 1
 with tempfile.TemporaryDirectory(prefix='weston-entrypoint-') as temporary:

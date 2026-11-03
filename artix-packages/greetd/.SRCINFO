@@ -1,7 +1,7 @@
 pkgbase = greetd-multiseatd
 	pkgdesc = greetd with isolated context-based multiseatd PAM workers and stock ReGreet in Cage
 	pkgver = 0.10.3
-	pkgrel = 1
+	pkgrel = 2
 	url = https://git.sr.ht/~kennylevinsen/greetd
 	arch = x86_64
 	license = GPL-3.0-only
@@ -19,7 +19,7 @@ pkgbase = greetd-multiseatd
 	depends = sessiond
 	depends = cage
 	depends = greetd-regreet
-	optdepends = sglogin-weston: managed Weston desktop entrypoint
+	optdepends = sglogin-weston-desktop-entry: managed Weston desktop entrypoint
 	provides = greetd=0.10.3
 	conflicts = greetd
 	conflicts = pam_rundir

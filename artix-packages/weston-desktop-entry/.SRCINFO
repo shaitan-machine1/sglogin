@@ -1,4 +1,4 @@
-pkgbase = sglogin-weston
+pkgbase = sglogin-weston-desktop-entry
 	pkgdesc = Separate context-managed Weston entrypoint (no desktop supervisor)
 	pkgver = 0.1.0
 	pkgrel = 1
@@ -12,4 +12,4 @@ pkgbase = sglogin-weston
 	sha256sums = SKIP
 	sha256sums = SKIP
 
-pkgname = sglogin-weston
+pkgname = sglogin-weston-desktop-entry

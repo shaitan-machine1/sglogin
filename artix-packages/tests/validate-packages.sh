@@ -71,11 +71,9 @@ dbus_user=$(package dbus-s6-user dbus-s6-user)
 pipewire_user=$(package pipewire-s6-user pipewire-s6-user)
 loginctl=$(package loginctl loginctl)
 greetd=$(package greetd greetd-multiseatd)
-cage=$(package cage cage)
-regreet=$(package regreet greetd-regreet)
-weston=$(package weston sglogin-weston)
+weston=$(package weston-desktop-entry sglogin-weston-desktop-entry)
 for archive in "$init" "$libseat" "$multi" "$session" "$manager" \
-               "$dbus_user" "$pipewire_user" "$loginctl" "$greetd" "$cage" "$regreet" "$weston"; do
+               "$dbus_user" "$pipewire_user" "$loginctl" "$greetd" "$weston"; do
   cache_archive "$archive"
 done
 
@@ -146,15 +144,11 @@ files_lack "$greetd" 'etc/s6|pam_sessiond|pam_aclad|sddm'
 check_greetd_pam "$(bsdtar -xOf "$greetd" etc/pam.d/greetd)" "$(bsdtar -xOf "$greetd" etc/pam.d/greetd-greeter)"
 python3 "$root/tests/greetd-production-hooks.py" "$greetd"
 python3 "$root/tests/weston-entrypoint.py"
-has "$cage" 'depend = libseat'
-has "$cage" 'depend = wlroots0.20=0.20.2'
-files_have "$cage" usr/bin/cage
-files_have "$regreet" usr/bin/regreet
-has "$regreet" 'provides = greetd-greeter'
 for dependency in 'multiseat>=0.3.0' weston; do has "$weston" "depend = $dependency"; done
 files_have "$weston" usr/bin/sglogin-weston usr/share/wayland-sessions/sglogin-weston.desktop
 files_lack "$weston" 'usr/share/wayland-sessions/weston.desktop|s6|plasma|kwin'
-for archive in "$greetd" "$cage" "$regreet" "$weston"; do
+has "$weston" 'pkgname = sglogin-weston-desktop-entry'
+for archive in "$greetd" "$weston"; do
   mode=$(bsdtar -tvf "$archive" | awk '$NF ~ /^usr\/bin\// && $1 !~ /^d/ {print $1}')
   [[ -n $mode ]] && ! grep -qv '^-rwxr-xr-x$' <<<"$mode"
 done
@@ -183,6 +177,8 @@ for name in sessiond-s6 multiseat-s6 greetd-s6; do
   esac
 done
 
-test ! -e "$root/sddm/PKGBUILD"
+for retired_recipe in sddm cage regreet weston; do
+  test ! -e "$root/$retired_recipe/PKGBUILD"
+done
 ! find "$root/s6-services/services" -name '*sddm*' | grep -q .
 echo 'context stack package metadata, ownership, and isolation checks passed'

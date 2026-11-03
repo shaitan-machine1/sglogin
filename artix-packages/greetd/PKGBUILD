@@ -1,6 +1,6 @@
 pkgname=greetd-multiseatd
 pkgver=0.10.3
-pkgrel=1
+pkgrel=2
 pkgdesc='greetd with isolated context-based multiseatd PAM workers and stock ReGreet in Cage'
 arch=(x86_64)
 url='https://git.sr.ht/~kennylevinsen/greetd'
@@ -9,7 +9,7 @@ depends=(dbus gcc-libs glibc pam pambase esysusers etmpfiles 'multiseat>=0.3.0' 
 makedepends=(cargo git rust)
 provides=(greetd=0.10.3)
 conflicts=(greetd pam_rundir)
-optdepends=('sglogin-weston: managed Weston desktop entrypoint')
+optdepends=('sglogin-weston-desktop-entry: managed Weston desktop entrypoint')
 backup=('etc/greetd/seat0.toml' 'etc/pam.d/greetd' 'etc/pam.d/greetd-greeter')
 _commit=08efe60feceea8c81f9571c666880ff1e1c2e3ff
 source=("git+https://git.sr.ht/~kennylevinsen/greetd#commit=$_commit"
