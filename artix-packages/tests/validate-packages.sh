@@ -70,9 +70,12 @@ manager=$(package s6-user-service-manager s6-user-service-manager)
 dbus_user=$(package dbus-s6-user dbus-s6-user)
 pipewire_user=$(package pipewire-s6-user pipewire-s6-user)
 loginctl=$(package loginctl loginctl)
-sddm=$(package sddm sddm)
+greetd=$(package greetd greetd-multiseatd)
+cage=$(package cage cage)
+regreet=$(package regreet greetd-regreet)
+weston=$(package weston sglogin-weston)
 for archive in "$init" "$libseat" "$multi" "$session" "$manager" \
-               "$dbus_user" "$pipewire_user" "$loginctl" "$sddm"; do
+               "$dbus_user" "$pipewire_user" "$loginctl" "$greetd" "$cage" "$regreet" "$weston"; do
   cache_archive "$archive"
 done
 
@@ -96,12 +99,14 @@ lacks "$multi" '^(provides|conflict|replace) = '
 lacks "$multi" '^depend = (seatd|seat-udev|s6|scoped|sessiond|aclad|sddm)$'
 files_have "$multi" \
   usr/bin/multiseatd \
-  usr/bin/seat-launch \
+  usr/libexec/multiseatd/with-seat \
   usr/lib/udev/rules.d/70-uaccess.rules \
   usr/lib/udev/rules.d/71-seat.rules \
   usr/lib/udev/rules.d/73-seat-late.rules \
-  usr/share/dbus-1/system.d/org.decoupling.multiseatd1.conf
-files_lack "$multi" 'usr/bin/seatd$|dist/s6|multiseatctl|seatctl'
+  usr/share/dbus-1/system.d/org.decoupling.multiseatd2.conf \
+  usr/lib/udev/rules.d/74-multiseat-graphical-vt.rules \
+  etc/conf.d/multiseatd
+files_lack "$multi" 'usr/bin/(seatd|seat-launch)$|multiseatd1|dist/s6|multiseatctl|seatctl'
 
 has "$session" 'provides = session-manager'
 has "$session" 'depend = user-service-manager'
@@ -124,22 +129,37 @@ for service in pipewire pipewire-pulse wireplumber pipewire-user; do
 done
 
 lacks "$loginctl" '^depend = (aclad|libseat|multiseat|scoped|seat-udev|sessiond)$'
-info "$loginctl" | grep -q '^optdepend = multiseat:'
+info "$loginctl" | grep -q '^optdepend = multiseat>=0\.3\.0:'
 info "$loginctl" | grep -q '^optdepend = sessiond:'
 lacks "$loginctl" '^optdepend = (aclad|scoped|seat-udev):'
 files_lack "$loginctl" 'multiseatctl|seatctl|sessionctl|scopectl|acladctl'
 mode=$(bsdtar -tvf "$loginctl" | awk '$NF == "usr/bin/loginctl" {print $1}')
 test "$mode" = '-rwxr-xr-x'
 
-sysusers=$(bsdtar -xOf "$sddm" usr/lib/sysusers.d/sddm.conf)
+sysusers=$(bsdtar -xOf "$greetd" usr/lib/sysusers.d/greetd.conf)
 check_greeter_account "$sysusers"
-has "$sddm" 'depend = pam_rundir'
-lacks "$sddm" '^depend = (aclad|elogind|init-logind|libseat|multiseat|scoped|seatd|sessiond)$'
-has "$sddm" 'optdepend = elogind: provide the logind seat backend'
-has "$sddm" 'optdepend = multiseat: provide the multiseatd backend'
-files_lack "$sddm" 'etc/s6|10-multiseatd.conf|10-decoupling.conf|pam_sessiond|pam_aclad'
+for dependency in 'multiseat>=0.3.0' sessiond cage greetd-regreet; do has "$greetd" "depend = $dependency"; done
+has "$greetd" 'conflict = pam_rundir'
+lacks "$greetd" '^depend = (pam_rundir|elogind|turnstile|sddm)$'
+files_have "$greetd" usr/bin/greetd etc/greetd/seat0.toml etc/pam.d/greetd etc/pam.d/greetd-greeter
+files_lack "$greetd" 'etc/s6|pam_sessiond|pam_aclad|sddm'
+check_greetd_pam "$(bsdtar -xOf "$greetd" etc/pam.d/greetd)" "$(bsdtar -xOf "$greetd" etc/pam.d/greetd-greeter)"
+python3 "$root/tests/greetd-production-hooks.py" "$greetd"
+python3 "$root/tests/weston-entrypoint.py"
+has "$cage" 'depend = libseat'
+has "$cage" 'depend = wlroots0.20=0.20.2'
+files_have "$cage" usr/bin/cage
+files_have "$regreet" usr/bin/regreet
+has "$regreet" 'provides = greetd-greeter'
+for dependency in 'multiseat>=0.3.0' weston; do has "$weston" "depend = $dependency"; done
+files_have "$weston" usr/bin/sglogin-weston usr/share/wayland-sessions/sglogin-weston.desktop
+files_lack "$weston" 'usr/share/wayland-sessions/weston.desktop|s6|plasma|kwin'
+for archive in "$greetd" "$cage" "$regreet" "$weston"; do
+  mode=$(bsdtar -tvf "$archive" | awk '$NF ~ /^usr\/bin\// && $1 !~ /^d/ {print $1}')
+  [[ -n $mode ]] && ! grep -qv '^-rwxr-xr-x$' <<<"$mode"
+done
 
-for name in sessiond-s6 multiseat-s6 sddm-s6; do
+for name in sessiond-s6 multiseat-s6 greetd-s6; do
   archive=$(package s6-services "$name")
   cache_archive "$archive"
   case $name in
@@ -153,13 +173,16 @@ for name in sessiond-s6 multiseat-s6 sddm-s6; do
       files_have "$archive" etc/s6/sv/multiseatd-srv/run
       files_lack "$archive" 'multiseatd-scan|aclad-|scoped-'
       ;;
-    sddm-s6)
+    greetd-s6)
       has "$archive" 'depend = multiseat-s6'
-      lacks "$archive" '^depend = (aclad|aclad-s6|scoped|scoped-s6|sessiond|sessiond-s6)$'
-      files_have "$archive" etc/sddm.conf.d/10-multiseatd.conf
-      ! bsdtar -xOf "$archive" etc/sddm.conf.d/10-multiseatd.conf | grep -q SeatdSocketDir
+      has "$archive" 'depend = sessiond-s6'
+      has "$archive" 'depend = greetd-multiseatd'
+      files_have "$archive" etc/s6/sv/greetd-seat0-srv/run etc/s6/sv/greetd-seat0-srv/dependencies.d/multiseatd-srv etc/s6/sv/greetd-seat0-srv/dependencies.d/sessiond-srv
+      files_lack "$archive" 'sddm|s6/user|kwin|plasma'
       ;;
   esac
 done
 
-echo 'consolidated package metadata, ownership, and isolation checks passed'
+test ! -e "$root/sddm/PKGBUILD"
+! find "$root/s6-services/services" -name '*sddm*' | grep -q .
+echo 'context stack package metadata, ownership, and isolation checks passed'

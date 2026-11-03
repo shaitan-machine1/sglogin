@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+exec 2>&1
+install -d -m700 -o greeter -g greeter /var/lib/regreet /var/log/regreet
+exec /usr/bin/greetd --config /etc/greetd/seat0.toml

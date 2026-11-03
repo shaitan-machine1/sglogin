@@ -1,0 +1,4 @@
+#!/bin/sh
+# Trusted entrypoint: full authority goes directly to with-seat, never a bus
+# helper, shell profile, logger or desktop supervisor.
+exec /usr/libexec/multiseatd/with-seat /usr/bin/weston --backend=drm-backend.so "$@"

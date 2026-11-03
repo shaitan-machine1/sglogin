@@ -1,15 +1,17 @@
 pkgname=multiseat
-pkgver=0.2.5
+pkgver=0.3.0
 pkgrel=1
-pkgdesc='Seat topology, embedded seatd actors and direct-access UID leases'
+pkgdesc='Context-based seats, independent seatd connections and explicit UID grants'
 arch=(x86_64)
 url='https://github.com/shaitan-machine1/multiseat'
 license=(GPL-3.0-only MIT)
 depends=(acl dbus gcc-libs glibc libudev libseat udev)
 makedepends=(cargo git rust)
-_commit=41358ef26ac7483e6a14b22e0afb662802fa58e8
-source=("git+https://github.com/shaitan-machine1/multiseat.git#commit=$_commit")
-sha256sums=('SKIP')
+_commit=ea1d1c464bac4bf3d4ddee75113b739c0584c81e
+source=("git+https://github.com/shaitan-machine1/multiseat.git#commit=$_commit"
+        multiseatd.conf 74-multiseat-graphical-vt.rules)
+backup=('etc/conf.d/multiseatd')
+sha256sums=('SKIP' 'SKIP' 'SKIP')
 
 build() {
   cd "$srcdir/multiseat"
@@ -24,9 +26,11 @@ check() {
 package() {
   cd "$srcdir/multiseat"
   install -Dm755 target/release/multiseatd "$pkgdir/usr/bin/multiseatd"
-  install -Dm755 target/release/seat-launch "$pkgdir/usr/bin/seat-launch"
-  install -Dm644 dist/dbus/org.decoupling.multiseatd1.conf \
-    "$pkgdir/usr/share/dbus-1/system.d/org.decoupling.multiseatd1.conf"
+  install -Dm755 target/release/with-seat "$pkgdir/usr/libexec/multiseatd/with-seat"
+  install -Dm644 dist/dbus/org.decoupling.multiseatd2.conf \
+    "$pkgdir/usr/share/dbus-1/system.d/org.decoupling.multiseatd2.conf"
+  install -Dm644 "$srcdir/multiseatd.conf" "$pkgdir/etc/conf.d/multiseatd"
+  install -Dm644 "$srcdir/74-multiseat-graphical-vt.rules" "$pkgdir/usr/lib/udev/rules.d/74-multiseat-graphical-vt.rules"
   for rule in 70-uaccess.rules 71-seat.rules 73-seat-late.rules; do
     install -Dm644 "dist/udev/$rule" "$pkgdir/usr/lib/udev/rules.d/$rule"
   done

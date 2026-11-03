@@ -1,3 +1,9 @@
 #!/bin/sh
+set -eu
 exec 2>&1
-exec /usr/bin/multiseatd --bus system
+. /etc/conf.d/multiseatd
+case "$GRAPHICAL_VT" in
+  none) exec /usr/bin/multiseatd --non-vt-only ;;
+  ''|*[!0-9]*) echo 'invalid GRAPHICAL_VT' >&2; exit 1 ;;
+  *) exec /usr/bin/multiseatd --graphical-vt "$GRAPHICAL_VT" ;;
+esac

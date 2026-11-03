@@ -1,0 +1,20 @@
+pkgbase = greetd-regreet
+	pkgdesc = Unmodified ReGreet GTK greeter for the standard greetd protocol
+	pkgver = 0.5.0
+	pkgrel = 1
+	url = https://github.com/rharish101/ReGreet
+	arch = x86_64
+	license = GPL-3.0-or-later
+	makedepends = cargo
+	makedepends = git
+	makedepends = rust
+	depends = gcc-libs
+	depends = glibc
+	depends = glib2
+	depends = gtk4
+	optdepends = glycin: image loaders for optional backgrounds
+	provides = greetd-greeter
+	source = regreet::git+https://github.com/rharish101/ReGreet.git#commit=290e6f8d65b7034c5b63bc950a20bcf8277ebe5f
+	sha256sums = SKIP
+
+pkgname = greetd-regreet

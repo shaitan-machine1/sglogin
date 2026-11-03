@@ -1,0 +1,2 @@
+# Unified patches represent unchanged empty lines with one context-marker space.
+greetd/managed.patch whitespace=-blank-at-eol

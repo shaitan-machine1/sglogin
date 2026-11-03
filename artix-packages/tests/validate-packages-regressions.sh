@@ -23,11 +23,21 @@ for dependency in acl udev libseat; do
     check_multiseat_dependencies "$changed"
 done
 
-account='u sddm - "Simple Desktop Display Manager" /var/lib/sddm'
+account='u greeter - "Graphical greeter" /var/lib/regreet'
 check_greeter_account "$account"
-expect_failure 'sddm account definition is missing' check_greeter_account ''
-expect_failure 'sddm must not have static video group membership' \
-  check_greeter_account "$account"$'\nm\tsddm\tvideo'
+expect_failure 'greeter account definition is missing' check_greeter_account ''
+for group in video render input tty; do
+  expect_failure 'greeter must not have static device group membership' \
+    check_greeter_account "$account"$'\nm\tgreeter\t'"$group"
+done
+user='session include system-local-login'
+greeter='session include system-login'
+check_greetd_pam "$user" "$greeter"
+expect_failure 'greetd PAM central include is missing or duplicated' check_greetd_pam '' "$greeter"
+expect_failure 'greetd PAM central include is missing or duplicated' check_greetd_pam "$user"$'\n'"$user" "$greeter"
+for module in sessiond rundir elogind turnstile; do
+  expect_failure 'greetd must inherit central session policy' check_greetd_pam "$user" "$greeter"$'\nsession optional pam_'"$module.so"
+done
 
 check_source_policy $'source = libseat::git+https://example.invalid/repo.git\nsha256sums = SKIP' fixture
 check_source_policy 'source = user-service-manager' fixture
@@ -38,4 +48,4 @@ for url in git+ssh://git@example.invalid/repo.git git+http://example.invalid/rep
     check_source_policy "source = alias::$url" fixture
 done
 
-echo 'package-policy regressions passed (9 negative fixtures)'
+echo 'package-policy regressions passed (18 negative fixtures)'

@@ -1,6 +1,0 @@
-# The unauthenticated Wayland greeter helper owns its private runtime.
-# pam_rundir would race other greeters and sessiond's runtime ownership.
-auth       required     pam_permit.so
-account    required     pam_permit.so
-password   required     pam_deny.so
-session    required     pam_permit.so

@@ -1,0 +1,5 @@
+#%PAM-1.0
+# Root chooses this account; no user authentication transaction is bypassed.
+auth       required     pam_permit.so
+account    required     pam_permit.so
+session    include      system-login

@@ -26,12 +26,25 @@ check_multiseat_dependencies() {
 
 check_greeter_account() {
   local sysusers=$1
-  if ! grep -Eq '^[[:space:]]*u[[:space:]]+sddm[[:space:]]' <<<"$sysusers"; then
-    echo 'sddm account definition is missing' >&2
+  if ! grep -Eq '^[[:space:]]*u[[:space:]]+greeter[[:space:]]' <<<"$sysusers"; then
+    echo 'greeter account definition is missing' >&2
     return 1
   fi
-  if grep -Eq '^[[:space:]]*m[[:space:]]+sddm[[:space:]]+video([[:space:]]|$)' <<<"$sysusers"; then
-    echo 'sddm must not have static video group membership' >&2
+  if grep -Eq '^[[:space:]]*m[[:space:]]+greeter[[:space:]]+(video|render|input|tty)([[:space:]]|$)' <<<"$sysusers"; then
+    echo 'greeter must not have static device group membership' >&2
+    return 1
+  fi
+}
+
+check_greetd_pam() {
+  local user=$1 greeter=$2
+  if grep -Eq '^[[:space:]]*-?(session|auth|account|password)[[:space:]].*(pam_(sessiond|rundir|elogind|turnstile|aclad)|sessiond-user)' <<<"$user"$'\n'"$greeter"; then
+    echo 'greetd must inherit central session policy without duplicate or competing modules' >&2
+    return 1
+  fi
+  if [[ $(grep -Ec '^session[[:space:]]+include[[:space:]]+system-local-login[[:space:]]*$' <<<"$user") != 1 ]] ||
+     [[ $(grep -Ec '^session[[:space:]]+include[[:space:]]+system-login[[:space:]]*$' <<<"$greeter") != 1 ]]; then
+    echo 'greetd PAM central include is missing or duplicated' >&2
     return 1
   fi
 }

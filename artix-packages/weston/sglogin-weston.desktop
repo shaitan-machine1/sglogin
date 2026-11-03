@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Weston (SGLogin)
+Comment=Weston with a fresh context-managed libseat connection
+Exec=/usr/bin/sglogin-weston
+TryExec=/usr/bin/sglogin-weston
+Type=Application
+DesktopNames=Weston

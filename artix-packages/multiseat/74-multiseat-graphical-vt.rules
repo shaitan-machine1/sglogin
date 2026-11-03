@@ -1,0 +1,4 @@
+# Seat0 graphical VT configured in /etc/conf.d/multiseatd. Coordinate edits.
+SUBSYSTEM=="tty", KERNEL=="tty7", OWNER="root", GROUP="root", MODE="0600"
+SUBSYSTEM=="tty", KERNEL=="tty0", OWNER="root", GROUP="root", MODE="0600"
+SUBSYSTEM=="tty", KERNEL=="console", OWNER="root", GROUP="root", MODE="0600"

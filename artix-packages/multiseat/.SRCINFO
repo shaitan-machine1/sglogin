@@ -1,6 +1,6 @@
 pkgbase = multiseat
-	pkgdesc = Seat topology, embedded seatd actors and direct-access UID leases
-	pkgver = 0.2.5
+	pkgdesc = Context-based seats, independent seatd connections and explicit UID grants
+	pkgver = 0.3.0
 	pkgrel = 1
 	url = https://github.com/shaitan-machine1/multiseat
 	arch = x86_64
@@ -16,7 +16,12 @@ pkgbase = multiseat
 	depends = libudev
 	depends = libseat
 	depends = udev
-	source = git+https://github.com/shaitan-machine1/multiseat.git#commit=41358ef26ac7483e6a14b22e0afb662802fa58e8
+	backup = etc/conf.d/multiseatd
+	source = git+https://github.com/shaitan-machine1/multiseat.git#commit=ea1d1c464bac4bf3d4ddee75113b739c0584c81e
+	source = multiseatd.conf
+	source = 74-multiseat-graphical-vt.rules
+	sha256sums = SKIP
+	sha256sums = SKIP
 	sha256sums = SKIP
 
 pkgname = multiseat

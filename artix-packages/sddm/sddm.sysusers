@@ -1,2 +1,0 @@
-u sddm - "Simple Desktop Display Manager" /var/lib/sddm
-# Device access comes from the selected seat backend, not static video membership.

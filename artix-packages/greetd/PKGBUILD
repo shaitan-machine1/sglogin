@@ -1,0 +1,42 @@
+pkgname=greetd-multiseatd
+pkgver=0.10.3
+pkgrel=1
+pkgdesc='greetd with isolated context-based multiseatd PAM workers and stock ReGreet in Cage'
+arch=(x86_64)
+url='https://git.sr.ht/~kennylevinsen/greetd'
+license=(GPL-3.0-only)
+depends=(dbus gcc-libs glibc pam pambase esysusers etmpfiles 'multiseat>=0.3.0' sessiond cage greetd-regreet)
+makedepends=(cargo git rust)
+provides=(greetd=0.10.3)
+conflicts=(greetd pam_rundir)
+optdepends=('sglogin-weston: managed Weston desktop entrypoint')
+backup=('etc/greetd/seat0.toml' 'etc/pam.d/greetd' 'etc/pam.d/greetd-greeter')
+_commit=08efe60feceea8c81f9571c666880ff1e1c2e3ff
+source=("git+https://git.sr.ht/~kennylevinsen/greetd#commit=$_commit"
+        managed.patch greetd.pam greetd-greeter.pam greetd.sysusers greetd.tmpfiles seat0.toml)
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+prepare() {
+  cd "$srcdir/greetd"
+  git apply "$srcdir/managed.patch"
+  CARGO_TARGET_DIR=target cargo fetch --locked
+}
+build() {
+  cd "$srcdir/greetd"
+  # Never ship test-support (private PAM, preload and mlock bypass hooks).
+  CARGO_TARGET_DIR=target cargo build --release --locked --offline -p greetd
+}
+check() {
+  cd "$srcdir/greetd"
+  CARGO_TARGET_DIR=target cargo test --release --locked --offline --workspace --all-targets
+}
+package() {
+  cd "$srcdir/greetd"
+  install -Dm755 target/release/greetd "$pkgdir/usr/bin/greetd"
+  install -Dm644 README.multiseat.md "$pkgdir/usr/share/doc/greetd/managed.md"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$srcdir/greetd.pam" "$pkgdir/etc/pam.d/greetd"
+  install -Dm644 "$srcdir/greetd-greeter.pam" "$pkgdir/etc/pam.d/greetd-greeter"
+  install -Dm644 "$srcdir/greetd.sysusers" "$pkgdir/usr/lib/sysusers.d/greetd.conf"
+  install -Dm644 "$srcdir/greetd.tmpfiles" "$pkgdir/usr/lib/tmpfiles.d/greetd.conf"
+  install -Dm644 "$srcdir/seat0.toml" "$pkgdir/etc/greetd/seat0.toml"
+}

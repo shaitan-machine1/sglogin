@@ -1,6 +1,0 @@
-# SDDM authenticates users through the normal Artix login policy. Optional
-# decoupled-stack modules are activated centrally in system-login by loginctl.
-auth       include      system-login
-account    include      system-login
-password   include      system-login
-session    include      system-login

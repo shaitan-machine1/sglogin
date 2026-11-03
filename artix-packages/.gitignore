@@ -4,5 +4,7 @@
 /libseat/libseat/
 /multiseat/multiseat/
 /loginctl/loginctl/
-/sddm/sddm/
+/cage/cage/
+/greetd/greetd/
+/regreet/regreet/
 /sessiond/sessiond/
