@@ -6,7 +6,7 @@ SGLogin is a login suite - a collection of independent programs that handle seat
 | Repository | Description |
 | --- | --- |
 | [sglogin][sglogin] | This overview and [Artix Linux packages](artix-packages/README.md). |
-| [multiseat][multiseat] | Seat manager. |
+| [multiseatd][multiseatd] | Seat manager. |
 | [sessiond][sessiond] | Session manager. |
 | [loginctl][loginctl] | SGLogin's CLI interface. |
 | [libseat fork][seatd] | C libseat with inherited-FD support. |
@@ -48,7 +48,7 @@ Such coupling is the reason why logind has to be so big. And such decoupling is 
 
 # SGLogin `Multiseat`
 
-[Multiseat][multiseat] is a daemon that is responsible for seat brokering.
+[multiseatd][multiseatd] is a daemon that is responsible for seat brokering.
 
 A seat is a collection of devices used together: displays, keyboards, mice and other peripherals. A compositor needs access to those devices, but it should not need to create or control a login session to get that access.
 
@@ -180,7 +180,7 @@ Cleanup first requests graceful termination(same as on closing session with PAM)
 [Sessiond][sessiond] provides `SessionNew` and `SessionRemoved` D-Bus signals. I don't have any use-case for them right now, but maybe I'll use it at some point. Systemd-logind/Elogind provide it too, so why not?
 
 [sglogin]: https://github.com/shaitan-machine1/sglogin
-[multiseat]: https://github.com/shaitan-machine1/multiseat
+[multiseatd]: https://github.com/shaitan-machine1/multiseatd
 [seatd]: https://github.com/shaitan-machine1/seatd
 [sessiond]: https://github.com/shaitan-machine1/sessiond
 [loginctl]: https://github.com/shaitan-machine1/loginctl
