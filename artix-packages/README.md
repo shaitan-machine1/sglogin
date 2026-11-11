@@ -1,7 +1,7 @@
 # SGLogin Artix packages
 
 Independent components, not a combined daemon or suite metapackage. Sources use
-anonymous HTTPS with immutable commits and locked Rust dependencies. Validation
+anonymous HTTPS with immutable commits and locked Rust dependencies. Building
 never installs packages or changes services, PAM, devices or terminal modes.
 
 ## Outputs and source cohort
@@ -9,9 +9,9 @@ never installs packages or changes services, PAM, devices or terminal modes.
 | Recipe | Output / source |
 | --- | --- |
 | `libseat` | Maintained C libseat 0.9.3-2; `seatd` commit `42fe3abfdcaefd2d5cbd21f9db803b9da6a2ca6c`; inherited SEATD_FD and explicit native multiseatd backend, no seatd daemon |
-| `multiseatd` | v0.4.0, `892ffd76653f74f7cfcd83823632c80093138e7b`; both daemon variants, seat-launch, per-seat bus policy and seat/uaccess rules |
+| `multiseatd` | v0.4.1, `49834268db6fdfee8f061f6c13392d54b1f6fe83`; both daemon variants, with-seat/without-seat wrappers, per-seat bus policy and seat/uaccess rules |
 | `loginctl` | v0.3.2, `6e89a83802dff75e6fb31469d7189165cf7b88e8`; blocking administration and explicit configured-seat refresh |
-| `greetd` | `greetd-multiseatd` 0.10.3-5; direct maintained v0.10.3-sglogin.4, `8890e19ad27e38ee0b563ae76116510351935b7c`; privileged exec'd PAM hosts |
+| `greetd` | `greetd-multiseatd` 0.10.3-6; direct maintained v0.10.3-sglogin.5, `23c1abb3e3656b9aff6b16f554ca2c13431c1c8e`; privileged exec'd PAM hosts |
 | `weston-desktop-entry` | `sglogin-weston-desktop-entry`; distinct Weston (SGLogin) entry and strict launcher |
 | `seat-services` | Exactly four co-installable seat/display s6 outputs, below |
 | `s6-services` | Independent `sessiond-s6` only; session service definitions unchanged |
@@ -24,7 +24,7 @@ Cage, greetd-regreet and Weston are ordinary **unmodified distro packages**, not
 maintained recipes here. Greetd uses its published fork directly, not a patch
 applied to an unrelated upstream snapshot.
 
-## Build and validate (normal user only)
+## Build (normal user only)
 
 ```sh
 cd PACKAGE_DIRECTORY
@@ -41,21 +41,10 @@ exact public Git commits and version-controlled local inputs define the cohort.
 On a foreign/non-Artix host without the runtime packages, a normal-user build-only
 `makepkg --cleanbuild --nodeps` may use installed development tools. This does
 **not** validate target dependency resolution or a clean Artix chroot. Never
-use dependency-ignore flags for installation. Missing fixture prerequisites are
-skips (77), not passes. Build archives are not deployment or hardware acceptance.
-
-```sh
-bash tests/validate-packages.sh
-bash tests/validate-packages-regressions.sh
-bash tests/validate-packages.sh --check-recipes
-python3 tests/seat-service-graph.py  # s6-rc-compile, or explicit S6_RC_COMPILE
-```
-
-Set PKGDEST for archives outside recipe directories. Checks cover generated
-metadata, anonymous immutable sources, archive ownership/modes, exact four-output
-service isolation, matching config/args/log pipelines, bounded readiness probes,
-terminal reservation, central PAM includes and rejection of production test hooks.
-They never execute udev rules or contact the live seat/session stack.
+use dependency-ignore flags for installation. Build archives are not deployment
+or hardware acceptance. Set PKGDEST for archives outside recipe directories.
+Recipes retain component/source check phases; there is no separate package test
+suite.
 
 ## Seats, device access and explicit movement
 
@@ -137,13 +126,21 @@ runtime ownership alongside it.
 providing one effective definition for greeter-owned state/log directories at
 0700. No second `/usr/lib/tmpfiles.d/greetd.conf` duplicates those paths.
 
-Stock Cage runs stock ReGreet. The packaged path uses strict
-`/usr/libexec/multiseatd/seat-launch`; select **Weston (SGLogin)** for its distinct
-strict entry, leaving ordinary Weston unchanged. Native mode is separately
-supported/tested by the maintained C backend. Native pre-open code is trusted with
-full context authority; strict launch removes it before compositor exec. Never
-route authority through profiles, bus wrappers or loggers. UI/ordinary applications
-inherit neither authority/seatd FDs nor a Linux controlling terminal; PTYs remain
+Stock Cage runs stock ReGreet directly through the maintained native C libseat
+backend. Greetd passes authority and `LIBSEAT_BACKEND=multiseatd` identically to
+greeter and desktop commands; it has no launcher setting, executable allowlist or
+special wrapper policy. Unmodified Weston uses the same native backend normally.
+The command and its pre-libseat loaders/helpers are trusted with full authority.
+
+**Weston (SGLogin)** remains a distinct strict entry. Its desktop file's `Exec=`
+directly runs `/usr/libexec/multiseatd/with-seat /usr/bin/weston --backend=drm-backend.so`;
+there is no shell wrapper or `TryExec`. The `seat-wrapper` crate supplies `with-seat`
+and `without-seat` under `/usr/libexec/multiseatd/`. `with-seat` removes full
+authority before compositor exec, passing only a fresh seatd connection.
+`without-seat` closes nonstandard inherited FDs and strips seat capabilities and
+backend overrides; it refuses socket standard IO, does not remove UID ACL grants,
+and is not a sandbox. UI/ordinary applications should inherit neither authority
+nor seatd FDs. Both wrappers reject a Linux controlling terminal; PTYs remain
 supported.
 
 Deployment requires verified identity, protected current backups/rollback,

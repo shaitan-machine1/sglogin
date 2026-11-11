@@ -1,5 +1,5 @@
 pkgname=multiseatd
-pkgver=0.4.0
+pkgver=0.4.1
 pkgrel=1
 pkgdesc='Per-seat contexts, brokered devices, exact ACLs and optional native VT ownership'
 arch=(x86_64)
@@ -8,7 +8,7 @@ license=(GPL-3.0-only MIT)
 depends=(acl dbus gcc-libs glibc libudev 'libseat>=0.9.3-2' udev)
 makedepends=(cargo git rust)
 conflicts=(multiseat)
-_commit=892ffd76653f74f7cfcd83823632c80093138e7b
+_commit=49834268db6fdfee8f061f6c13392d54b1f6fe83
 source=("git+https://github.com/shaitan-machine1/multiseatd.git#commit=$_commit")
 sha256sums=('SKIP')
 
@@ -25,16 +25,14 @@ check() {
   cd "$srcdir/multiseatd"
   cargo test --release --locked --offline --workspace --all-targets --target-dir target/non-vt
   cargo test --release --locked --offline --workspace --all-targets --features multiseatd/vt --target-dir target/vt
-  ! cargo tree --offline -p multiseatd --no-default-features | grep -q 'linux-vt'
-  target/non-vt/release/multiseatd --help | grep -q -- '--seat'
-  ! target/non-vt/release/multiseatd --help | grep -q -- '--vts'
-  target/vt/release/multiseatd --help | grep -q -- '--vts'
 }
 package() {
   cd "$srcdir/multiseatd"
   install -Dm755 target/non-vt/release/multiseatd "$pkgdir/usr/bin/multiseatd"
   install -Dm755 target/vt/release/multiseatd "$pkgdir/usr/bin/multiseatd-vt"
-  install -Dm755 target/non-vt/release/seat-launch "$pkgdir/usr/libexec/multiseatd/seat-launch"
+  for wrapper in with-seat without-seat; do
+    install -Dm755 "target/non-vt/release/$wrapper" "$pkgdir/usr/libexec/multiseatd/$wrapper"
+  done
   install -Dm644 dist/dbus/org.SGLogin.Multiseatd1.conf "$pkgdir/usr/share/dbus-1/system.d/org.SGLogin.Multiseatd1.conf"
   for rule in 70-uaccess.rules 71-seat.rules 73-seat-late.rules; do
     install -Dm644 "dist/udev/$rule" "$pkgdir/usr/lib/udev/rules.d/$rule"

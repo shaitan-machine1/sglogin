@@ -1,7 +1,6 @@
 [Desktop Entry]
 Name=Weston (SGLogin)
 Comment=Weston with a fresh context-managed libseat connection
-Exec=/usr/bin/sglogin-weston
-TryExec=/usr/bin/sglogin-weston
+Exec=/usr/libexec/multiseatd/with-seat /usr/bin/weston --backend=drm-backend.so
 Type=Application
 DesktopNames=Weston

@@ -1,17 +1,17 @@
 pkgname=greetd-multiseatd
 pkgver=0.10.3
-pkgrel=5
+pkgrel=6
 pkgdesc='Privileged per-session PAM hosts with certified multiseatd handoff and stock ReGreet in Cage'
 arch=(x86_64)
 url='https://github.com/shaitan-machine1/greetd'
 license=(GPL-3.0-only)
-depends=(dbus gcc-libs glibc pam pambase esysusers etmpfiles 'multiseatd>=0.4.0' sessiond cage greetd-regreet)
+depends=(dbus gcc-libs glibc pam pambase esysusers etmpfiles 'multiseatd>=0.4.1' sessiond cage greetd-regreet)
 makedepends=(cargo git rust)
 provides=(greetd=0.10.3)
 conflicts=(greetd pam_rundir)
 optdepends=('sglogin-weston-desktop-entry: managed Weston desktop entrypoint')
 backup=('etc/greetd/seat0.toml' 'etc/greetd/seat1.toml' 'etc/pam.d/greetd' 'etc/pam.d/greetd-greeter' 'etc/tmpfiles.d/regreet.conf')
-_commit=8890e19ad27e38ee0b563ae76116510351935b7c
+_commit=23c1abb3e3656b9aff6b16f554ca2c13431c1c8e
 source=("git+https://github.com/shaitan-machine1/greetd.git#commit=$_commit"
         greetd.pam greetd-greeter.pam greetd.sysusers regreet.conf seat0.toml seat1.toml)
 sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')

@@ -1,7 +1,7 @@
 pkgbase = greetd-multiseatd
 	pkgdesc = Privileged per-session PAM hosts with certified multiseatd handoff and stock ReGreet in Cage
 	pkgver = 0.10.3
-	pkgrel = 5
+	pkgrel = 6
 	url = https://github.com/shaitan-machine1/greetd
 	arch = x86_64
 	license = GPL-3.0-only
@@ -15,7 +15,7 @@ pkgbase = greetd-multiseatd
 	depends = pambase
 	depends = esysusers
 	depends = etmpfiles
-	depends = multiseatd>=0.4.0
+	depends = multiseatd>=0.4.1
 	depends = sessiond
 	depends = cage
 	depends = greetd-regreet
@@ -28,7 +28,7 @@ pkgbase = greetd-multiseatd
 	backup = etc/pam.d/greetd
 	backup = etc/pam.d/greetd-greeter
 	backup = etc/tmpfiles.d/regreet.conf
-	source = git+https://github.com/shaitan-machine1/greetd.git#commit=8890e19ad27e38ee0b563ae76116510351935b7c
+	source = git+https://github.com/shaitan-machine1/greetd.git#commit=23c1abb3e3656b9aff6b16f554ca2c13431c1c8e
 	source = greetd.pam
 	source = greetd-greeter.pam
 	source = greetd.sysusers

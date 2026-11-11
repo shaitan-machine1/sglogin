@@ -1,6 +1,6 @@
 pkgbase = multiseatd
 	pkgdesc = Per-seat contexts, brokered devices, exact ACLs and optional native VT ownership
-	pkgver = 0.4.0
+	pkgver = 0.4.1
 	pkgrel = 1
 	url = https://github.com/shaitan-machine1/multiseatd
 	arch = x86_64
@@ -17,7 +17,7 @@ pkgbase = multiseatd
 	depends = libseat>=0.9.3-2
 	depends = udev
 	conflicts = multiseat
-	source = git+https://github.com/shaitan-machine1/multiseatd.git#commit=892ffd76653f74f7cfcd83823632c80093138e7b
+	source = git+https://github.com/shaitan-machine1/multiseatd.git#commit=49834268db6fdfee8f061f6c13392d54b1f6fe83
 	sha256sums = SKIP
 
 pkgname = multiseatd
