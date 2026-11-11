@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+exec 2>&1
+. /etc/conf.d/greetd-seat0
+# Ordering alone is not readiness. Failure exits for ordinary s6 supervision;
+# no compositor/GPU retry or main-process context RPC fallback is introduced.
+timeout 12 /usr/bin/loginctl seat context seat0 list >/dev/null
+timeout 12 /usr/bin/loginctl session list >/dev/null
+exec /usr/bin/greetd --config "$CONFIG" --seat seat0 --vt "$VT"

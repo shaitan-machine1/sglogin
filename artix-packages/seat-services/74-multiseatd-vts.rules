@@ -1,0 +1,6 @@
+# Fixed Artix seat0 reservation. Review gettys/recovery BEFORE enabling.
+# Only these terminals and console aliases are protected, never all text VTs.
+SUBSYSTEM=="tty", KERNEL=="tty[7-9]", OWNER="root", GROUP="root", MODE="0600"
+SUBSYSTEM=="tty", KERNEL=="tty1[0-2]", OWNER="root", GROUP="root", MODE="0600"
+SUBSYSTEM=="tty", KERNEL=="tty0", OWNER="root", GROUP="root", MODE="0600"
+SUBSYSTEM=="tty", KERNEL=="console", OWNER="root", GROUP="root", MODE="0600"

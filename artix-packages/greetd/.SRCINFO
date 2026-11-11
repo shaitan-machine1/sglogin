@@ -1,8 +1,8 @@
 pkgbase = greetd-multiseatd
-	pkgdesc = greetd with isolated context-based multiseatd PAM workers and stock ReGreet in Cage
+	pkgdesc = Privileged per-session PAM hosts with certified multiseatd handoff and stock ReGreet in Cage
 	pkgver = 0.10.3
-	pkgrel = 2
-	url = https://git.sr.ht/~kennylevinsen/greetd
+	pkgrel = 5
+	url = https://github.com/shaitan-machine1/greetd
 	arch = x86_64
 	license = GPL-3.0-only
 	makedepends = cargo
@@ -15,7 +15,7 @@ pkgbase = greetd-multiseatd
 	depends = pambase
 	depends = esysusers
 	depends = etmpfiles
-	depends = multiseat>=0.3.0
+	depends = multiseatd>=0.4.0
 	depends = sessiond
 	depends = cage
 	depends = greetd-regreet
@@ -24,15 +24,17 @@ pkgbase = greetd-multiseatd
 	conflicts = greetd
 	conflicts = pam_rundir
 	backup = etc/greetd/seat0.toml
+	backup = etc/greetd/seat1.toml
 	backup = etc/pam.d/greetd
 	backup = etc/pam.d/greetd-greeter
-	source = git+https://git.sr.ht/~kennylevinsen/greetd#commit=08efe60feceea8c81f9571c666880ff1e1c2e3ff
-	source = managed.patch
+	backup = etc/tmpfiles.d/regreet.conf
+	source = git+https://github.com/shaitan-machine1/greetd.git#commit=8890e19ad27e38ee0b563ae76116510351935b7c
 	source = greetd.pam
 	source = greetd-greeter.pam
 	source = greetd.sysusers
-	source = greetd.tmpfiles
+	source = regreet.conf
 	source = seat0.toml
+	source = seat1.toml
 	sha256sums = SKIP
 	sha256sums = SKIP
 	sha256sums = SKIP

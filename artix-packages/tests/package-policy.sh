@@ -12,16 +12,35 @@ check_source_policy() {
     echo "remote build source must use HTTPS in $recipe" >&2
     return 1
   fi
+  if ! awk '$1 ~ /^source(_.*)?$/ {
+    source=$3; sub(/^.*::/, "", source)
+    if (source ~ /^git\+https:/ && source !~ /#commit=[0-9a-f]{40}$/) exit 1
+  }' <<<"$metadata"; then
+    echo "Git build source must pin an exact commit in $recipe" >&2
+    return 1
+  fi
+  if grep -Eq '^\s*source[^ ]* = (.*::)?(git\+)?https://[^/]*@' <<<"$metadata"; then
+    echo "remote build source must be anonymous in $recipe" >&2
+    return 1
+  fi
 }
 
-check_multiseat_dependencies() {
+check_multiseatd_dependencies() {
   local metadata=$1 dependency
   for dependency in acl udev libseat; do
-    if ! grep -Fqx "depend = $dependency" <<<"$metadata"; then
-      echo "multiseat is missing runtime dependency: $dependency" >&2
+    if ! grep -Eq "^depend = $dependency(>=.*|)$" <<<"$metadata"; then
+      echo "multiseatd is missing runtime dependency: $dependency" >&2
       return 1
     fi
   done
+}
+
+check_seat_service_outputs() {
+  local expected='multiseatd-seat0-s6 multiseatd-seat1-s6 greetd-seat0-s6 greetd-seat1-s6'
+  if [[ "$*" != "$expected" ]]; then
+    echo 'seat services must have exactly four ordered co-installable outputs' >&2
+    return 1
+  fi
 }
 
 check_greeter_account() {

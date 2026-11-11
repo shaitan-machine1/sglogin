@@ -1,15 +1,15 @@
 pkgname=libseat
 pkgver=0.9.3
-pkgrel=1
-pkgdesc='Seat management library with inherited server connection support'
+pkgrel=2
+pkgdesc='C libseat with inherited connections and explicit per-seat multiseatd bootstrap'
 arch=(x86_64)
 url='https://github.com/shaitan-machine1/seatd'
 license=(MIT)
 provides=('libseat.so' 'seatd=0.9.3')
 conflicts=('seatd')
-depends=(glibc)
+depends=(glibc dbus)
 makedepends=(git meson ninja)
-_commit=7813c08e35cbff69069dbdecda97f7c7ff506cc2
+_commit=42fe3abfdcaefd2d5cbd21f9db803b9da6a2ca6c
 source=("libseat::git+https://github.com/shaitan-machine1/seatd.git#commit=$_commit")
 sha256sums=('SKIP')
 
@@ -20,6 +20,7 @@ build() {
     -Dexamples=disabled \
     -Dserver=disabled \
     -Dlibseat-seatd=enabled \
+    -Dlibseat-multiseatd=enabled \
     -Dlibseat-logind=disabled \
     -Dlibseat-builtin=disabled \
     -Dman-pages=disabled

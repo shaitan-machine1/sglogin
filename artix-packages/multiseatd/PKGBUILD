@@ -1,0 +1,47 @@
+pkgname=multiseatd
+pkgver=0.4.0
+pkgrel=1
+pkgdesc='Per-seat contexts, brokered devices, exact ACLs and optional native VT ownership'
+arch=(x86_64)
+url='https://github.com/shaitan-machine1/multiseatd'
+license=(GPL-3.0-only MIT)
+depends=(acl dbus gcc-libs glibc libudev 'libseat>=0.9.3-2' udev)
+makedepends=(cargo git rust)
+conflicts=(multiseat)
+_commit=892ffd76653f74f7cfcd83823632c80093138e7b
+source=("git+https://github.com/shaitan-machine1/multiseatd.git#commit=$_commit")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$srcdir/multiseatd"
+  cargo fetch --locked
+}
+build() {
+  cd "$srcdir/multiseatd"
+  cargo build --release --locked --offline --no-default-features --workspace --target-dir target/non-vt
+  cargo build --release --locked --offline --no-default-features -p multiseatd --features vt --target-dir target/vt
+}
+check() {
+  cd "$srcdir/multiseatd"
+  cargo test --release --locked --offline --workspace --all-targets --target-dir target/non-vt
+  cargo test --release --locked --offline --workspace --all-targets --features multiseatd/vt --target-dir target/vt
+  ! cargo tree --offline -p multiseatd --no-default-features | grep -q 'linux-vt'
+  target/non-vt/release/multiseatd --help | grep -q -- '--seat'
+  ! target/non-vt/release/multiseatd --help | grep -q -- '--vts'
+  target/vt/release/multiseatd --help | grep -q -- '--vts'
+}
+package() {
+  cd "$srcdir/multiseatd"
+  install -Dm755 target/non-vt/release/multiseatd "$pkgdir/usr/bin/multiseatd"
+  install -Dm755 target/vt/release/multiseatd "$pkgdir/usr/bin/multiseatd-vt"
+  install -Dm755 target/non-vt/release/seat-launch "$pkgdir/usr/libexec/multiseatd/seat-launch"
+  install -Dm644 dist/dbus/org.SGLogin.Multiseatd1.conf "$pkgdir/usr/share/dbus-1/system.d/org.SGLogin.Multiseatd1.conf"
+  for rule in 70-uaccess.rules 71-seat.rules 73-seat-late.rules; do
+    install -Dm644 "dist/udev/$rule" "$pkgdir/usr/lib/udev/rules.d/$rule"
+  done
+  for doc in README.md docs/API.md docs/BEHAVIOR.md; do
+    install -Dm644 "$doc" "$pkgdir/usr/share/doc/multiseatd/${doc##*/}"
+  done
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE.multiseatd"
+  install -Dm644 crates/seat-udev/LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE.seat-udev"
+}

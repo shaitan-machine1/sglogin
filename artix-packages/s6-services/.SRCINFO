@@ -1,7 +1,7 @@
 pkgbase = s6-services
 	pkgver = 0.1.0
-	pkgrel = 5
-	url = https://github.com/shaitan-machine1/decoupling-logind-artix-packages
+	pkgrel = 6
+	url = https://github.com/shaitan-machine1/sglogin
 	arch = any
 	license = GPL-3.0-only
 
@@ -11,25 +11,3 @@ pkgname = sessiond-s6
 	depends = s6-base
 	depends = s6-rc
 	depends = sessiond
-
-pkgname = multiseat-s6
-	pkgdesc = s6-rc service definition for multiseatd
-	depends = dbus-s6
-	depends = multiseat
-	depends = s6-base
-	depends = s6-rc
-	depends = udev
-
-pkgname = greetd-s6
-	pkgdesc = Independent seat0 greetd system service using managed contexts and stock ReGreet in Cage
-	depends = coreutils
-	depends = dbus-s6
-	depends = greetd-multiseatd
-	depends = multiseat-s6
-	depends = sessiond-s6
-	depends = s6-base
-	depends = s6-rc
-	depends = udev
-	provides = init-greetd
-	conflicts = init-greetd
-	conflicts = init-sddm

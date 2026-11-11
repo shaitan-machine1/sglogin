@@ -2,7 +2,7 @@
 **/pkg/
 **/*.pkg.tar.*
 /libseat/libseat/
-/multiseat/multiseat/
+/multiseatd/multiseatd/
 /loginctl/loginctl/
 /greetd/greetd/
 /sessiond/sessiond/

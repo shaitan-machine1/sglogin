@@ -1,2 +1,0 @@
-d /var/lib/regreet 0700 greeter greeter -
-d /var/log/regreet 0700 greeter greeter -

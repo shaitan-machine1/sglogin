@@ -1,0 +1,4 @@
+#!/bin/execlineb -P
+foreground { install -d -o s6log -g s6log /var/log/multiseatd-seat1 }
+s6-setuidgid s6log
+s6-log -d3 -b -- n3 s2000000 T /var/log/multiseatd-seat1

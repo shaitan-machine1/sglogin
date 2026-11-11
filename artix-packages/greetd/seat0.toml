@@ -2,10 +2,11 @@
 service = "greetd"
 [multiseat]
 seat = "seat0"
+vt = 7
 run_directory = "/run/greetd-seat0"
-launcher = "/usr/libexec/multiseatd/with-seat"
+launcher = "/usr/libexec/multiseatd/seat-launch"
 trusted_entrypoints = "/usr/bin/sglogin-weston"
 [default_session]
-command = "/usr/libexec/multiseatd/with-seat /usr/bin/cage -- /usr/bin/regreet"
+command = "/usr/libexec/multiseatd/seat-launch /usr/bin/cage -- /usr/bin/regreet"
 user = "greeter"
 service = "greetd-greeter"

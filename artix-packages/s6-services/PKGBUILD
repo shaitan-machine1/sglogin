@@ -1,39 +1,15 @@
 pkgbase=s6-services
-pkgname=(sessiond-s6 multiseat-s6 greetd-s6)
+pkgname=(sessiond-s6)
 pkgver=0.1.0
-pkgrel=5
+pkgrel=6
 arch=(any)
-url='https://github.com/shaitan-machine1/decoupling-logind-artix-packages'
+url='https://github.com/shaitan-machine1/sglogin'
 license=(GPL-3.0-only)
-
-_install_services() {
-  local service
-  install -d "$pkgdir/etc/s6/sv"
-  for service in "$@"; do
-    cp -a "$startdir/services/$service" "$pkgdir/etc/s6/sv/"
-  done
-  install -Dm644 "$startdir/../LICENSE" \
-    "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
-}
 
 package_sessiond-s6() {
   pkgdesc='s6-rc service definition for sessiond'
   depends=(dbus-s6 s6-base s6-rc sessiond)
-
-  _install_services sessiond-srv sessiond-log
-}
-
-package_multiseat-s6() {
-  pkgdesc='s6-rc service definition for multiseatd'
-  depends=(dbus-s6 multiseat s6-base s6-rc udev)
-
-  _install_services multiseatd-srv multiseatd-log
-}
-
-package_greetd-s6() {
-  pkgdesc='Independent seat0 greetd system service using managed contexts and stock ReGreet in Cage'
-  depends=(coreutils dbus-s6 greetd-multiseatd multiseat-s6 sessiond-s6 s6-base s6-rc udev)
-  provides=(init-greetd)
-  conflicts=(init-greetd init-sddm)
-  _install_services greetd-seat0-srv greetd-seat0-log
+  install -d "$pkgdir/etc/s6/sv"
+  cp -a "$startdir/services/sessiond-srv" "$startdir/services/sessiond-log" "$pkgdir/etc/s6/sv/"
+  install -Dm644 "$startdir/../LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

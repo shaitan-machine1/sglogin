@@ -1,30 +1,28 @@
 # SGLogin Artix packages
 
-Independently installable components, not a combined daemon or suite metapackage.
-Remote sources and Rust dependencies use anonymous HTTPS and exact commits/tags.
-No installation, service changes, or deployment is performed by validation.
+Independent components, not a combined daemon or suite metapackage. Sources use
+anonymous HTTPS with immutable commits and locked Rust dependencies. Validation
+never installs packages or changes services, PAM, devices or terminal modes.
 
-## Outputs
+## Outputs and source cohort
 
-- `init-logind-none`: empty init-logind/elogind compatibility provider.
-- `libseat`: maintained C libseat, inherited SEATD_FD support, no seatd daemon.
-  Provides seatd/libseat.so and conflicts with the distribution seatd package.
-- `multiseat`: multiseatd, `/usr/libexec/multiseatd/with-seat`, v2 D-Bus policy,
-  and complete ordered seat/uaccess rules. No old launcher or v1 API.
-- `sessiond`: daemon, PAM module and replaceable per-UID manager launcher.
-- `loginctl`: synchronous context/connection/session/scope/PAM administration.
-- `greetd-multiseatd`: managed greetd 0.10.3, exact public upstream plus the
-  complete `greetd/managed.patch`; isolated exec'd PAM workers, stock ReGreet
-  inside Cage. No dependency on an unpublished fork or local source checkout.
-- `sglogin-weston-desktop-entry` (`weston-desktop-entry/`): trusted launcher and
-  distinct Wayland
-  session entry. Depends on Weston and multiseat; ordinary Weston is unchanged.
-- `sessiond-s6`, `multiseat-s6`, `greetd-s6`: independent system service outputs.
-- `s6-user-service-manager`, optional disabled `dbus-s6-user` and
-  `pipewire-s6-user`: unchanged per-UID services, not a desktop supervisor.
+| Recipe | Output / source |
+| --- | --- |
+| `libseat` | Maintained C libseat 0.9.3-2; `seatd` commit `42fe3abfdcaefd2d5cbd21f9db803b9da6a2ca6c`; inherited SEATD_FD and explicit native multiseatd backend, no seatd daemon |
+| `multiseatd` | v0.4.0, `892ffd76653f74f7cfcd83823632c80093138e7b`; both daemon variants, seat-launch, per-seat bus policy and seat/uaccess rules |
+| `loginctl` | v0.3.2, `6e89a83802dff75e6fb31469d7189165cf7b88e8`; blocking administration and explicit configured-seat refresh |
+| `greetd` | `greetd-multiseatd` 0.10.3-5; direct maintained v0.10.3-sglogin.4, `8890e19ad27e38ee0b563ae76116510351935b7c`; privileged exec'd PAM hosts |
+| `weston-desktop-entry` | `sglogin-weston-desktop-entry`; distinct Weston (SGLogin) entry and strict launcher |
+| `seat-services` | Exactly four co-installable seat/display s6 outputs, below |
+| `s6-services` | Independent `sessiond-s6` only; session service definitions unchanged |
 
-There are no SDDM application/service outputs, separate ACL daemon, seatd
-server, common PAM-fragment package, retained-session UI or KDE integration.
+`sessiond`, `init-logind-none`, `s6-user-service-manager` and optional disabled
+`dbus-s6-user`/`pipewire-s6-user` remain separate. Session APIs and their source
+pins are unchanged. No ACL daemon, SDDM, standalone seatd server, common PAM
+fragment, retained-session UI, KDE integration or s6 desktop supervisor is added.
+Cage, greetd-regreet and Weston are ordinary **unmodified distro packages**, not
+maintained recipes here. Greetd uses its published fork directly, not a patch
+applied to an unrelated upstream snapshot.
 
 ## Build and validate (normal user only)
 
@@ -33,106 +31,123 @@ cd PACKAGE_DIRECTORY
 makepkg --cleanbuild
 ```
 
-Install normal distro `cage`, `greetd-regreet` and `weston` packages; none is
-patched or rebuilt by these recipes. Verify the selected Cage/wlroots uses the
-maintained C libseat and consumes inherited SEATD_FD. The integration tests keep
-explicit reproducible source inputs independently of distro packaging.
+Build libseat/multiseatd/loginctl/greetd and the selected desktop entry before
+service outputs. Core builds use distinct `target/non-vt` and `target/vt`
+directories; install respectively `/usr/bin/multiseatd` and
+`/usr/bin/multiseatd-vt`. SDK/launcher clients have no executor or VT feature.
+The production builds never enable test-support. Sources use SKIP checksums;
+exact public Git commits and version-controlled local inputs define the cohort.
 
-Build libseat/multiseat/sessiond/loginctl and the selected greeter/desktop-entry
-packages before service outputs. Sources including local files deliberately use
-SKIP checksums in these build-only recipes; exact remote Git revisions and the
-version-controlled maintained patch define the input set.
-
-On a foreign/non-Artix build host without the selected runtime packages, a
-build-only `makepkg --cleanbuild --nodeps` can produce archives using already
-available development tools. This does **not** validate pacman dependency
-resolution or a clean Artix chroot; do not use dependency-ignore flags for
-installation or to hide a broken target graph. Record that distinction.
-
-After building all current outputs:
+On a foreign/non-Artix host without the runtime packages, a normal-user build-only
+`makepkg --cleanbuild --nodeps` may use installed development tools. This does
+**not** validate target dependency resolution or a clean Artix chroot. Never
+use dependency-ignore flags for installation. Missing fixture prerequisites are
+skips (77), not passes. Build archives are not deployment or hardware acceptance.
 
 ```sh
 bash tests/validate-packages.sh
 bash tests/validate-packages-regressions.sh
 bash tests/validate-packages.sh --check-recipes
+python3 tests/seat-service-graph.py  # s6-rc-compile, or explicit S6_RC_COMPILE
 ```
 
-Archives default to recipe directories; set PKGDEST for a separate directory.
-Checks cover metadata regeneration, anonymous HTTPS, source policy, archive
-ownership/permissions, component dependencies, central PAM includes, non-static
-UID device access, and absence of retired APIs/services. Nothing is installed.
-These checks do not establish physical hardware, cgroup or graphical acceptance.
+Set PKGDEST for archives outside recipe directories. Checks cover generated
+metadata, anonymous immutable sources, archive ownership/modes, exact four-output
+service isolation, matching config/args/log pipelines, bounded readiness probes,
+terminal reservation, central PAM includes and rejection of production test hooks.
+They never execute udev rules or contact the live seat/session stack.
 
-## Device and terminal policy
+## Seats, device access and explicit movement
 
-Multiseat owns `70-uaccess.rules`, `71-seat.rules`, `73-seat-late.rules` and
-`74-multiseat-graphical-vt.rules`. Primary DRM/evdev/hidraw are brokered through
-independent seatd connections. Render/other eligible uaccess nodes follow
-explicit UID grants from the effective context, not connection-count leases.
-Do not run another ACL owner. UID ACLs do not isolate same-UID processes and
-removing ACLs does not revoke existing direct FDs.
+Each explicitly configured seat has its own daemon, contexts, catalog and ACL
+registry. The VT binary claims its **complete startup terminal set** until
+shutdown, independently of contexts/connections. Root creates immutable-bound
+contexts, explicitly deactivates an old context before activating its successor,
+and selects foreground separately. Socket arrival/EOF never chooses a context.
+Only the eligible foreground active VT context gets managed access; non-VT
+instances have one active context and no terminal machinery.
 
-`/etc/conf.d/multiseatd` explicitly selects graphical VT7. Coordinate it with
-gettys and the matching root-only tty7/tty0/console rule **before** use; no other
-service or controlling-terminal lineage may own that VT. Changing the VT means
-reviewing both files, not merely an environment variable. `GRAPHICAL_VT=none`
-selects deliberately non-VT-only operation, not a seat0 fallback. No context
-allocates a VT. Compositor/UI/application lineages get neither Linux terminal
-FDs nor a Linux controlling terminal. PTY applications remain supported.
+Primary DRM/evdev/hidraw are broker candidates with supported withdrawal checked
+before delegation. Render/other eligible uaccess nodes receive explicit context
+UID grants. Exact reconciliation preserves base permissions but removes unexpected
+named users/groups. No static video/render/input/tty groups or competing ACL owner.
+Same-UID/base permissions and already-open direct FDs limit isolation; ACL removal
+does not revoke arbitrary existing descriptions.
 
-## Greetd and PAM
+`/etc/loginctl.conf` explicitly lists the intended complete `seat0 seat1` pair.
+`loginctl seat assign`, `unassign` and `flush` change persistent udev rules only;
+run **`loginctl seat refresh` separately**. Refresh pins all configured root owners,
+requires successful removal on EVERY participant before ANY addition, and reports
+partial errors without retry/rollback. An offline seat blocks additions. Retire or
+recover an old owner before removing it from config. Startup inventory is not a
+move: finish assignments and old-owner release before destination startup.
 
-The packaged seat0 controller uses `/etc/greetd/seat0.toml` and
-`/run/greetd-seat0`. Additional seats need independently named configs, run
-folders, service/log definitions and matching seat selection. Do not share
-sockets, runfiles or persistent controller lock inodes. Greetd supports one
-user login per seat, then starts a fresh ReGreet-in-Cage greeter.
-
-Artix greetd includes system-local-login; that includes system-login. Keep the
-normal distro authentication/account/password policy. The greeter uses permit
-auth/account and the central session include. Activate pam_sessiond **once** in
-system-login using loginctl's existing marked integration, never add a second
-entry to greetd or recurse through sessiond-user. Keep pam_env after sessiond:
-
-```sh
-loginctl pam status
-# Future authorized installation only, as an already-root caller:
-loginctl pam activate
-```
-
-No recipe edits live PAM. Greetd requires actual sessiond containment even when
-the central PAM module is configured fail-open. It verifies runtime ownership
-and fails closed if integration is missing. Sessiond owns `/run/user/<uid>`;
-`greetd-multiseatd` conflicts with pam_rundir. Review/disable other competing
-pam_elogind/pam_turnstile runtime owners in the selected policy. Greeter state
-and logs live below `/var/lib/regreet` and `/var/log/regreet`, not a second
-runtime manager. Its account has no permanent video/render/input/tty membership.
-
-Choose **Weston (SGLogin)**, not the ordinary Weston entry. Trusted absolute
-entrypoints listed in greetd configuration receive full context authority and
-must immediately exec with-seat at the final compositor boundary. Optional
-entrypoints may be absent; they are checked before use. Never route authority
-through profiles, dbus-run-session, loggers or unrelated helpers. With-seat
-creates one fresh connection and closes authority before compositor exec.
-Cage consumes the seatd FD before executing unmodified ReGreet. No custom UI
-backend, new sessiond API or s6-supervised desktop is involved.
-
-## System service graph
+## Four-output system service graph
 
 ```text
-dbus-srv + mount-cgroups              -> sessiond-srv
-dbus-srv + udevadm                    -> multiseatd-srv
-sessiond-srv + multiseatd-srv + mounts -> greetd-seat0-srv
+multiseatd-seat0-s6 -> multiseatd-seat0-{srv,log}
+multiseatd-seat1-s6 -> multiseatd-seat1-{srv,log}
+greetd-seat0-s6     -> greetd-seat0-{srv,log}
+greetd-seat1-s6     -> greetd-seat1-{srv,log}
+
+dbus-srv + mount-cgroups                 -> sessiond-srv
+dbus-srv + udevadm                       -> multiseatd-seatN-srv
+sessiond-srv + multiseatd-seatN-srv
+  + mounts/tmpfiles + root readiness     -> greetd-seatN-srv
 ```
 
-Longrun ordering is not proof of D-Bus readiness: greetd fails closed and the
-service supervisor can retry after backends are ready. On backend owner/seat
-loss it tears down lineages rather than reconstructing old capabilities.
-Installing a service output does not enable it or change unrelated user services.
-The optional user manager still compiles `$XDG_RUNTIME_DIR/s6` using complete
-home/admin/system service-directory overrides and an empty default bundle.
+Seat0 executes `multiseatd-vt --seat seat0 --vts 7,8,9,10,11,12`; seat1 executes
+`multiseatd --seat seat1`. Corresponding greetd defaults are seat0/VT7 and non-VT
+seat1. Only greetd-seat0-s6 provides/conflicts with init-greetd; seat1 is additive.
+Installing outputs does not enable services. Readiness is root ListContexts plus
+session inventory, not ordering alone or proof of compositor/driver readiness.
 
-Any future deployment needs a separately authorized review. Never remove Artix
-base. Verify `/usr/bin/s6-init` and `/sbin/init` before installation/reboot.
-Do not infer fresh PAM/login, physical rendering/input, text-VT or reboot
-acceptance from source builds or headless/private-bus fixtures.
+Before enabling seat0, reserve VT7–12 with **no gettys/competing controllers**;
+retain recovery outside that set. Its service output owns
+`74-multiseatd-vts.rules`, protecting exactly VT7–12, tty0 and console, never all
+text terminals. Review conf.d VTS and this rule together. Do not silently stop a
+getty or steal a terminal. Unused claimed VTs may be black. Extra explicitly
+configured greetd controllers can use other claimed VTs without another default
+service output; their runfile/socket/lock and logs must remain seat-plus-VT scoped.
+
+For migration, stop/retire old global access and graphical owners first, remove
+old global service outputs/admin seat1 clones explicitly, then install/select the
+new per-seat outputs through normal transactions. Do not overlap ACL writers or
+claim old cleanup from process disappearance. Preserve unrelated session/user
+services, persistent lock inodes, recovery and the selected init packages.
+
+## Greetd, PAM and launch boundaries
+
+The privileged PAM host creates/verifies immutable metadata **before PAM**, opens
+the session on Start, grants the final verified UID, activates by root ID and
+foregrounds only the initial greeter. Main supervises generic workers, not context
+IDs or RPC recovery. Positive device teardown must reach main **before PAM close**;
+Pending, timeout or death without proof cannot authorize the next normal Start.
+Final PAM/worker results remain separate. Upstream controller exit/short-session
+behavior and external restart supervision are preserved; no GPU retry loop.
+
+Artix greetd includes system-local-login/system-login. Activate pam_sessiond
+**once centrally**, before pam_env, using `loginctl pam activate` only during an
+authorized installation. No recipe edits live PAM or duplicates the module in
+greetd. Greetd requires actual sessiond containment and verified runtime ownership,
+not merely fail-open PAM success. Do not run pam_rundir/pam_elogind/pam_turnstile
+runtime ownership alongside it.
+
+`/etc/tmpfiles.d/regreet.conf` overrides the distro's same-basename fragment,
+providing one effective definition for greeter-owned state/log directories at
+0700. No second `/usr/lib/tmpfiles.d/greetd.conf` duplicates those paths.
+
+Stock Cage runs stock ReGreet. The packaged path uses strict
+`/usr/libexec/multiseatd/seat-launch`; select **Weston (SGLogin)** for its distinct
+strict entry, leaving ordinary Weston unchanged. Native mode is separately
+supported/tested by the maintained C backend. Native pre-open code is trusted with
+full context authority; strict launch removes it before compositor exec. Never
+route authority through profiles, bus wrappers or loggers. UI/ordinary applications
+inherit neither authority/seatd FDs nor a Linux controlling terminal; PTYs remain
+supported.
+
+Deployment requires verified identity, protected current backups/rollback,
+non-overlapping recovery and reviewed normal dependency transactions. Never remove
+Artix base or the selected init. Verify executable `/usr/bin/s6-init` and
+`/sbin/init` resolving to it before each transaction. No physical-host changes,
+reboot, password entry or fresh graphical acceptance follows from these builds.

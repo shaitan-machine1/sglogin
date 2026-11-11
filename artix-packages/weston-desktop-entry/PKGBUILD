@@ -1,11 +1,11 @@
 pkgname=sglogin-weston-desktop-entry
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Separate context-managed Weston entrypoint (no desktop supervisor)'
 arch=(any)
 url='https://github.com/shaitan-machine1/sglogin'
 license=(GPL-3.0-only)
-depends=('multiseat>=0.3.0' weston)
+depends=('multiseatd>=0.4.0' weston)
 source=(sglogin-weston sglogin-weston.desktop)
 sha256sums=('SKIP' 'SKIP')
 package() {

@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+. /etc/conf.d/greetd-seat0
+case "$VT" in ''|*[!0-9]*) exit 1;; esac
+path=/var/log/greetd-seat0-vt$VT
+install -d -o s6log -g s6log "$path"
+exec s6-setuidgid s6log s6-log -d3 -b -- n3 s2000000 T "$path"

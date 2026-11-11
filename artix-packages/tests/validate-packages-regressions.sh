@@ -16,11 +16,11 @@ expect_failure() {
 }
 
 metadata=$'depend = acl\ndepend = udev\ndepend = libseat'
-check_multiseat_dependencies "$metadata"
+check_multiseatd_dependencies "$metadata"
 for dependency in acl udev libseat; do
   changed=$(grep -Fvx "depend = $dependency" <<<"$metadata")
-  expect_failure "multiseat is missing runtime dependency: $dependency" \
-    check_multiseat_dependencies "$changed"
+  expect_failure "multiseatd is missing runtime dependency: $dependency" \
+    check_multiseatd_dependencies "$changed"
 done
 
 account='u greeter - "Graphical greeter" /var/lib/regreet'
@@ -39,7 +39,7 @@ for module in sessiond rundir elogind turnstile; do
   expect_failure 'greetd must inherit central session policy' check_greetd_pam "$user" "$greeter"$'\nsession optional pam_'"$module.so"
 done
 
-check_source_policy $'source = libseat::git+https://example.invalid/repo.git\nsha256sums = SKIP' fixture
+check_source_policy $'source = libseat::git+https://example.invalid/repo.git#commit=0000000000000000000000000000000000000000\nsha256sums = SKIP' fixture
 check_source_policy 'source = user-service-manager' fixture
 expect_failure 'unexpected source checksum' \
   check_source_policy $'source = https://example.invalid/source\nsha256sums = forbidden' fixture
@@ -48,4 +48,19 @@ for url in git+ssh://git@example.invalid/repo.git git+http://example.invalid/rep
     check_source_policy "source = alias::$url" fixture
 done
 
-echo 'package-policy regressions passed (18 negative fixtures)'
+outputs=(multiseatd-seat0-s6 multiseatd-seat1-s6 greetd-seat0-s6 greetd-seat1-s6)
+check_seat_service_outputs "${outputs[@]}"
+expect_failure 'exactly four ordered co-installable outputs' check_seat_service_outputs "${outputs[@]:0:3}"
+expect_failure 'exactly four ordered co-installable outputs' check_seat_service_outputs "${outputs[@]}" greetd-extra-s6
+expect_failure 'exactly four ordered co-installable outputs' check_seat_service_outputs "${outputs[@]:0:3}" greetd-seat0-s6
+printf '%s\n' 'SUBSYSTEM=="tty", KERNEL=="tty[7-9]", OWNER="root", GROUP="root", MODE="0600"' \
+  'SUBSYSTEM=="tty", KERNEL=="tty1[0-2]", OWNER="root", GROUP="root", MODE="0600"' \
+  'SUBSYSTEM=="tty", KERNEL=="tty0", OWNER="root", GROUP="root", MODE="0600"' \
+  'SUBSYSTEM=="tty", KERNEL=="console", OWNER="root", GROUP="root", MODE="0600"' >"$work/rules"
+python3 "$root/tests/vt-reservation.py" <"$work/rules"
+if python3 "$root/tests/vt-reservation.py" < <(printf '%s\n' 'SUBSYSTEM=="tty", KERNEL=="tty*", OWNER="root", GROUP="root", MODE="0600"') 2>/dev/null; then
+  echo 'accepted broad terminal lockdown' >&2; exit 1
+fi
+expect_failure 'Git build source must pin an exact commit' check_source_policy 'source = git+https://example.invalid/repo.git' fixture
+expect_failure 'remote build source must be anonymous' check_source_policy 'source = https://user@example.invalid/archive' fixture
+echo 'package-policy regressions passed (24 negative fixtures)'

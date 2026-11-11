@@ -1,11 +1,11 @@
 pkgbase = sglogin-weston-desktop-entry
 	pkgdesc = Separate context-managed Weston entrypoint (no desktop supervisor)
 	pkgver = 0.1.0
-	pkgrel = 1
+	pkgrel = 2
 	url = https://github.com/shaitan-machine1/sglogin
 	arch = any
 	license = GPL-3.0-only
-	depends = multiseat>=0.3.0
+	depends = multiseatd>=0.4.0
 	depends = weston
 	source = sglogin-weston
 	source = sglogin-weston.desktop

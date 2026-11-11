@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+exec 2>&1
+exec /usr/bin/multiseatd --seat seat1
