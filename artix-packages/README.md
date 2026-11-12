@@ -1,5 +1,7 @@
 # SGLogin Artix packages
 
+For a seat0-only installation, see the [installation guide](../INSTALL.md).
+
 Independent components, not a combined daemon or suite metapackage. Sources use
 anonymous HTTPS with immutable commits and locked Rust dependencies. Building
 never installs packages or changes services, PAM, devices or terminal modes.
@@ -63,7 +65,8 @@ named users/groups. No static video/render/input/tty groups or competing ACL own
 Same-UID/base permissions and already-open direct FDs limit isolation; ACL removal
 does not revoke arbitrary existing descriptions.
 
-`/etc/loginctl.conf` explicitly lists the intended complete `seat0 seat1` pair.
+`/etc/loginctl.conf` defaults to `seats = "seat0"`. Add other seats when configuring
+additional instances; the list must cover the complete intended set of owners.
 `loginctl seat assign`, `unassign` and `flush` change persistent udev rules only;
 run **`loginctl seat refresh` separately**. Refresh pins all configured root owners,
 requires successful removal on EVERY participant before ANY addition, and reports
