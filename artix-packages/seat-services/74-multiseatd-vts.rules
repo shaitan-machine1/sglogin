@@ -1,6 +1,6 @@
-# Fixed Artix seat0 reservation. Review gettys/recovery BEFORE enabling.
+# Fixed Artix seat0 VT7–11 reservation; preserve the tty12 recovery getty.
 # Only these terminals and console aliases are protected, never all text VTs.
 SUBSYSTEM=="tty", KERNEL=="tty[7-9]", OWNER="root", GROUP="root", MODE="0600"
-SUBSYSTEM=="tty", KERNEL=="tty1[0-2]", OWNER="root", GROUP="root", MODE="0600"
+SUBSYSTEM=="tty", KERNEL=="tty1[0-1]", OWNER="root", GROUP="root", MODE="0600"
 SUBSYSTEM=="tty", KERNEL=="tty0", OWNER="root", GROUP="root", MODE="0600"
 SUBSYSTEM=="tty", KERNEL=="console", OWNER="root", GROUP="root", MODE="0600"

@@ -1,7 +1,7 @@
 pkgbase = greetd-multiseatd
 	pkgdesc = Privileged per-session PAM hosts with certified multiseatd handoff and stock ReGreet in Cage
 	pkgver = 0.10.3
-	pkgrel = 6
+	pkgrel = 7
 	url = https://github.com/shaitan-machine1/greetd
 	arch = x86_64
 	license = GPL-3.0-only

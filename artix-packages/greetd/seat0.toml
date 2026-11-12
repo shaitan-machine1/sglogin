@@ -5,6 +5,6 @@ seat = "seat0"
 vt = 7
 run_directory = "/run/greetd-seat0"
 [default_session]
-command = "/usr/bin/cage -- /usr/bin/regreet"
+command = "/usr/bin/cage -s -- /usr/bin/regreet"
 user = "greeter"
 service = "greetd-greeter"

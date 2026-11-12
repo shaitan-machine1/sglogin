@@ -13,7 +13,7 @@ never installs packages or changes services, PAM, devices or terminal modes.
 | `libseat` | Maintained C libseat 0.9.3-2; `seatd` commit `42fe3abfdcaefd2d5cbd21f9db803b9da6a2ca6c`; inherited SEATD_FD and explicit native multiseatd backend, no seatd daemon |
 | `multiseatd` | v0.4.1, `49834268db6fdfee8f061f6c13392d54b1f6fe83`; both daemon variants, with-seat/without-seat wrappers, per-seat bus policy and seat/uaccess rules |
 | `loginctl` | v0.3.2, `6e89a83802dff75e6fb31469d7189165cf7b88e8`; blocking administration and explicit configured-seat refresh |
-| `greetd` | `greetd-multiseatd` 0.10.3-6; direct maintained v0.10.3-sglogin.5, `23c1abb3e3656b9aff6b16f554ca2c13431c1c8e`; privileged exec'd PAM hosts |
+| `greetd` | `greetd-multiseatd` 0.10.3-7; direct maintained v0.10.3-sglogin.5, `23c1abb3e3656b9aff6b16f554ca2c13431c1c8e`; privileged exec'd PAM hosts |
 | `weston-desktop-entry` | `sglogin-weston-desktop-entry`; distinct Weston (SGLogin) entry and strict launcher |
 | `seat-services` | Exactly four co-installable seat/display s6 outputs, below |
 | `s6-services` | Independent `sessiond-s6` only; session service definitions unchanged |
@@ -88,15 +88,15 @@ sessiond-srv + multiseatd-seatN-srv
   + mounts/tmpfiles + root readiness     -> greetd-seatN-srv
 ```
 
-Seat0 executes `multiseatd-vt --seat seat0 --vts 7,8,9,10,11,12`; seat1 executes
+Seat0 executes `multiseatd-vt --seat seat0 --vts 7,8,9,10,11`; seat1 executes
 `multiseatd --seat seat1`. Corresponding greetd defaults are seat0/VT7 and non-VT
 seat1. Only greetd-seat0-s6 provides/conflicts with init-greetd; seat1 is additive.
 Installing outputs does not enable services. Readiness is root ListContexts plus
 session inventory, not ordering alone or proof of compositor/driver readiness.
 
-Before enabling seat0, reserve VT7–12 with **no gettys/competing controllers**;
-retain recovery outside that set. Its service output owns
-`74-multiseatd-vts.rules`, protecting exactly VT7–12, tty0 and console, never all
+Before enabling seat0, reserve VT7–11 with **no gettys/competing controllers**;
+retain Artix's tty12 recovery getty outside that set. Its service output owns
+`74-multiseatd-vts.rules`, protecting exactly VT7–11, tty0 and console, never all
 text terminals. Review conf.d VTS and this rule together. Do not silently stop a
 getty or steal a terminal. Unused claimed VTs may be black. Extra explicitly
 configured greetd controllers can use other claimed VTs without another default
@@ -130,9 +130,11 @@ providing one effective definition for greeter-owned state/log directories at
 0700. No second `/usr/lib/tmpfiles.d/greetd.conf` duplicates those paths.
 
 Stock Cage runs stock ReGreet directly through the maintained native C libseat
-backend. Greetd passes authority and `LIBSEAT_BACKEND=multiseatd` identically to
-greeter and desktop commands; it has no launcher setting, executable allowlist or
-special wrapper policy. Unmodified Weston uses the same native backend normally.
+backend. The VT-backed seat0 command uses Cage's `-s` option to allow text-console
+switching from the greeter; non-VT seat1 has no terminal switching. Greetd passes
+authority and `LIBSEAT_BACKEND=multiseatd` identically to greeter and desktop
+commands; it has no launcher setting, executable allowlist or special wrapper
+policy. Unmodified Weston uses the same native backend normally.
 The command and its pre-libseat loaders/helpers are trusted with full authority.
 
 **Weston (SGLogin)** remains a distinct strict entry. Its desktop file's `Exec=`

@@ -1,6 +1,6 @@
 pkgbase = seat-services
 	pkgver = 0.1.0
-	pkgrel = 1
+	pkgrel = 2
 	url = https://github.com/shaitan-machine1/sglogin
 	arch = any
 	license = GPL-3.0-only
@@ -14,7 +14,7 @@ pkgbase = seat-services
 	sha256sums = SKIP
 
 pkgname = multiseatd-seat0-s6
-	pkgdesc = Native VT7–12 multiseatd seat0 s6 service
+	pkgdesc = Native VT7–11 multiseatd seat0 s6 service
 	depends = dbus-s6
 	depends = multiseatd>=0.4.0
 	depends = s6-base
