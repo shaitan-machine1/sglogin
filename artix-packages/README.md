@@ -12,16 +12,25 @@ never installs packages or changes services, PAM, devices or terminal modes.
 | --- | --- |
 | `libseat` | Maintained C libseat 0.9.3-2; `seatd` commit `42fe3abfdcaefd2d5cbd21f9db803b9da6a2ca6c`; inherited SEATD_FD and explicit native multiseatd backend, no seatd daemon |
 | `multiseatd` | v0.4.1, `49834268db6fdfee8f061f6c13392d54b1f6fe83`; both daemon variants, with-seat/without-seat wrappers, per-seat bus policy and seat/uaccess rules |
-| `loginctl` | v0.3.2, `6e89a83802dff75e6fb31469d7189165cf7b88e8`; blocking administration and explicit configured-seat refresh |
+| `sessiond` | v0.1.1, `c87c83d8929fbe0fe63d0012324fbd7f957e98c0`; PAM sessions/runtime for every UID, user managers default to UID >= 1000 |
+| `loginctl` | v0.3.3, `a1f0a59435af8b73d37afc9a8197cbc1714ca02b`; blocking administration, sessiond 0.1.1 config and explicit configured-seat refresh |
 | `greetd` | `greetd-multiseatd` 0.10.3-7; direct maintained v0.10.3-sglogin.5, `23c1abb3e3656b9aff6b16f554ca2c13431c1c8e`; privileged exec'd PAM hosts |
 | `weston-desktop-entry` | `sglogin-weston-desktop-entry`; distinct Weston (SGLogin) entry and strict launcher |
 | `seat-services` | Exactly four co-installable seat/display s6 outputs, below |
 | `s6-services` | Independent `sessiond-s6` only; session service definitions unchanged |
 
 `sessiond`, `init-logind-none`, `s6-user-service-manager` and optional disabled
-`dbus-s6-user`/`pipewire-s6-user` remain separate. Session APIs and their source
-pins are unchanged. No ACL daemon, SDDM, standalone seatd server, common PAM
-fragment, retained-session UI, KDE integration or s6 desktop supervisor is added.
+`dbus-s6-user`/`pipewire-s6-user` remain separate. Session APIs are unchanged.
+`user_service_manager.min_uid` defaults to 1000 even with an existing unchanged
+`/etc/sessiond.conf`: lower UIDs still receive sessions, containment and runtime
+directories, but no user manager is started or replaced. Zero enables managers
+for every UID. The sample documents the default as a comment so currently
+installed older config readers can still parse it; explicit overrides require
+readers built against sessiond 0.1.1 (including the loginctl version above).
+Greetd's sessiond dependency is not removed by this package update.
+
+No ACL daemon, SDDM, standalone seatd server, common PAM fragment, retained-session
+UI, KDE integration or s6 desktop supervisor is added.
 Cage, greetd-regreet and Weston are ordinary **unmodified distro packages**, not
 maintained recipes here. Greetd uses its published fork directly, not a patch
 applied to an unrelated upstream snapshot.
