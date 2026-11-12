@@ -1,6 +1,6 @@
 pkgname=loginctl
 pkgver=0.3.2
-pkgrel=1
+pkgrel=2
 pkgdesc='Unified administration for the decoupled login stack'
 arch=(x86_64)
 url='https://github.com/shaitan-machine1/loginctl'
@@ -12,8 +12,9 @@ optdepends=('multiseatd>=0.4.0: administer explicitly configured seats and conte
             'sessiond: inspect and close managed sessions')
 backup=('etc/loginctl.conf')
 _commit=6e89a83802dff75e6fb31469d7189165cf7b88e8
-source=("git+https://github.com/shaitan-machine1/loginctl.git#commit=$_commit")
-sha256sums=('SKIP')
+source=("git+https://github.com/shaitan-machine1/loginctl.git#commit=$_commit"
+        loginctl.conf)
+sha256sums=('SKIP' 'SKIP')
 
 prepare() {
   cd "$srcdir/loginctl"
@@ -34,6 +35,6 @@ check() {
 package() {
   cd "$srcdir/loginctl"
   install -Dm755 target/release/loginctl "$pkgdir/usr/bin/loginctl"
-  install -Dm644 dist/loginctl.conf "$pkgdir/etc/loginctl.conf"
+  install -Dm644 "$srcdir/loginctl.conf" "$pkgdir/etc/loginctl.conf"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
