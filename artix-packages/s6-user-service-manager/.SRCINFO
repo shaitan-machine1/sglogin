@@ -1,14 +1,14 @@
 pkgbase = s6-user-service-manager
 	pkgdesc = Per-user s6-rc service manager for session managers
 	pkgver = 0.1.0
-	pkgrel = 1
+	pkgrel = 2
 	url = https://github.com/shaitan-machine1/decoupling-logind-artix-packages
 	arch = any
 	license = GPL-3.0-only
 	depends = coreutils
 	depends = findutils
 	depends = s6
-	depends = s6-rc
+	depends = s6-rc>=0.7.0.0
 	provides = user-service-manager
 	source = user-service-manager
 	sha256sums = SKIP

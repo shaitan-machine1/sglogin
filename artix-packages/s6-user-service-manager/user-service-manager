@@ -1,46 +1,45 @@
 #!/bin/sh
 set -eu
 
-usage() {
-    echo "usage: user-service-manager --ready-fd FD" >&2
+if [ "$#" -ne 2 ] || [ "$1" != --ready-fd ]; then
+    echo 'usage: user-service-manager --ready-fd FD' >&2
     exit 64
-}
-
-[ "$#" -eq 2 ] || usage
-[ "$1" = "--ready-fd" ] || usage
+fi
 ready_fd=$2
-case $ready_fd in
-    ''|*[!0-9]*) usage ;;
-esac
-[ "$ready_fd" -ge 3 ] 2>/dev/null || usage
+case $ready_fd in ''|*[!0-9]*) exit 64 ;; esac
+[ "$ready_fd" -ge 3 ] 2>/dev/null || exit 64
 
 : "${HOME:?HOME is required}"
 : "${XDG_RUNTIME_DIR:?XDG_RUNTIME_DIR is required}"
 config_home=${XDG_CONFIG_HOME:-$HOME/.config}
-case $XDG_RUNTIME_DIR in /*) ;; *) echo "XDG_RUNTIME_DIR must be absolute" >&2; exit 65 ;; esac
-case $config_home in /*) ;; *) echo "XDG_CONFIG_HOME must be absolute" >&2; exit 65 ;; esac
+data_home=${XDG_DATA_HOME:-$HOME/.local/share}
+for directory in "$HOME" "$config_home" "$data_home" "$XDG_RUNTIME_DIR"; do
+    case $directory in /*) ;; *) echo "path must be absolute: $directory" >&2; exit 65 ;; esac
+done
 
-uid=$(id -u)
+# Persistent frontend-compatible state; no s6-frontend dependency or config.
+system_sv=/etc/s6/user/sv
+admin_sv=/etc/s6/user/adminsv
+user_sv=$config_home/s6/sv
+state=$data_home/s6
+repo=$state/repository
+bootdir=$state/compiled
+bootdb=$bootdir/current
+# Only scanner, live state and scratch space are disposable.
 base=$XDG_RUNTIME_DIR/s6
-source_tree=$base/source
-compiled=$base/compiled
 scandir=$base/scandir
 live=$base/live
-tmp=$base/tmp
+stmpdir=$base/tmp
+uid=$(id -u)
 svscan_pid=
-stopping=0
+live_started=0
 
-close_ready() {
-    eval "exec $ready_fd>&-" 2>/dev/null || :
-}
-
-stop_manager() {
-    [ "$stopping" -eq 0 ] || return 0
-    stopping=1
-    if [ -d "$live" ]; then
+shutdown() {
+    trap '' TERM INT HUP
+    if [ "$live_started" -eq 1 ]; then
         timeout 10 s6-rc -l "$live" -da change 2>/dev/null || :
     fi
-    if [ -n "$svscan_pid" ] && kill -0 "$svscan_pid" 2>/dev/null; then
+    if [ -n "$svscan_pid" ]; then
         s6-svscanctl -t "$scandir" 2>/dev/null || :
         count=0
         while kill -0 "$svscan_pid" 2>/dev/null; do
@@ -51,140 +50,92 @@ stop_manager() {
         wait "$svscan_pid" 2>/dev/null || :
     fi
 }
+trap 'exit 0' TERM INT HUP
+trap 'status=$?; eval "exec $ready_fd>&-"; shutdown; exit "$status"' EXIT
 
-on_signal() {
-    stop_manager
-    exit 0
-}
-trap on_signal TERM INT HUP
-trap 'status=$?; close_ready; stop_manager; exit "$status"' EXIT
-
-validate_system_root() {
-    root=$1
-    [ -e "$root" ] || return 0
-    [ -d "$root" ] && [ ! -L "$root" ] || {
-        echo "invalid system source root: $root" >&2
-        exit 65
+# Preserve the source ownership and no-symlink contract. Repositories link
+# the real stores directly; later stores override earlier definitions.
+validate_store() {
+    store=$1
+    owner=$2
+    [ -e "$store" ] || [ -L "$store" ] || return 0
+    [ -d "$store" ] && [ ! -L "$store" ] || {
+        echo "invalid service store: $store" >&2; exit 65
     }
-    bad=$(find "$root" \( ! -user 0 -o -perm /022 \) -print -quit)
-    [ -z "$bad" ] || {
-        echo "system source is not root-owned and read-only to non-root: $bad" >&2
-        exit 65
-    }
-}
-
-validate_user_root() {
-    root=$1
-    [ -e "$root" ] || return 0
-    [ -d "$root" ] && [ ! -L "$root" ] || {
-        echo "invalid user source root: $root" >&2
-        exit 65
-    }
-    bad=$(find "$root" ! -user "$uid" -print -quit)
-    [ -z "$bad" ] || {
-        echo "user source is owned by another uid: $bad" >&2
-        exit 65
-    }
-}
-
-validate_service() {
-    service=$1
-    name=${service##*/}
-    case $name in
-        ''|*[!A-Za-z0-9_.-]*|[.-]*|*..*)
-            echo "invalid service name: $name" >&2
-            exit 65
-            ;;
-    esac
-    [ -d "$service" ] && [ ! -L "$service" ] || {
-        echo "service source is not a directory: $service" >&2
-        exit 65
-    }
-    bad=$(find "$service" \( -type l -o -type b -o -type c -o -type p -o -type s \) -print -quit)
-    [ -z "$bad" ] || {
-        echo "service source contains an unsupported file: $bad" >&2
-        exit 65
-    }
-}
-
-stage_root() {
-    root=$1
-    [ -d "$root" ] || return 0
-    for service in "$root"/*; do
+    bad=$(find "$store" \( ! -user "$owner" -o -type l -o -type b -o -type c -o -type p -o -type s \) -print -quit)
+    if [ "$owner" -eq 0 ] && [ -z "$bad" ]; then
+        bad=$(find "$store" -perm /022 -print -quit)
+    fi
+    [ -z "$bad" ] || { echo "unsafe service source: $bad" >&2; exit 65; }
+    for service in "$store"/*; do
         [ -e "$service" ] || continue
-        validate_service "$service"
-        name=${service##*/}
-        rm -rf "$tmp/source/$name"
-        cp -a -- "$service" "$tmp/source/$name"
+        case ${service##*/} in
+            default) echo "default is generated; remove source: $service" >&2; exit 65 ;;
+            *[!A-Za-z0-9_.-]*|[.-]*|*..*) echo "invalid service name: $service" >&2; exit 65 ;;
+        esac
+        [ -d "$service" ] || { echo "not a service directory: $service" >&2; exit 65; }
     done
 }
 
+[ -d "$XDG_RUNTIME_DIR" ] && [ ! -L "$XDG_RUNTIME_DIR" ] &&
+    [ "$(stat -c %u "$XDG_RUNTIME_DIR")" -eq "$uid" ] || {
+    echo 'invalid XDG_RUNTIME_DIR ownership or type' >&2; exit 65
+}
+validate_store "$system_sv" 0
+validate_store "$admin_sv" 0
+validate_store "$user_sv" "$uid"
+for directory in "$user_sv" "$state" "$bootdir" "$base"; do
+    [ ! -L "$directory" ] || { echo "directory is a symlink: $directory" >&2; exit 65; }
+    (umask 077; mkdir -p "$directory")
+    [ "$(stat -c %u "$directory")" -eq "$uid" ] || {
+        echo "directory belongs to another uid: $directory" >&2; exit 65
+    }
+done
+
+set --
+for store in "$system_sv" "$admin_sv" "$user_sv"; do
+    [ ! -d "$store" ] || set -- "$@" "$store"
+done
+if [ -e "$repo" ] || [ -L "$repo" ]; then
+    [ -d "$repo" ] && [ ! -L "$repo" ] && [ "$(stat -c %u "$repo")" -eq "$uid" ] || {
+        echo "invalid repository: $repo" >&2; exit 65
+    }
+    s6-rc-repo-init -U -r "$repo" "$@"
+else
+    s6-rc-repo-init -r "$repo" "$@"
+fi
+if [ ! -e "$repo/sources/current" ] && [ ! -L "$repo/sources/current" ]; then
+    s6-rc-set-new -r "$repo" current
+fi
+# Bootstrap once. Later logins use only the installed database, never apply
+# pending enable/disable changes from the working set implicitly.
+if [ ! -e "$bootdb" ] && [ ! -L "$bootdb" ]; then
+    s6-rc-set-commit -r "$repo" -D default current
+    s6-rc-set-install -r "$repo" -c "$bootdb" -l "$live" \
+        --no-update --no-snapshot current
+fi
+[ -L "$bootdb" ] && [ -d "$bootdb" ] || {
+    echo "installed database is not a valid symlink: $bootdb" >&2; exit 65
+}
+
 umask 077
-[ -d "$XDG_RUNTIME_DIR" ] && [ ! -L "$XDG_RUNTIME_DIR" ] || {
-    echo "invalid XDG_RUNTIME_DIR" >&2
-    exit 65
-}
-[ "$(stat -c %u "$XDG_RUNTIME_DIR")" -eq "$uid" ] || {
-    echo "XDG_RUNTIME_DIR is owned by another uid" >&2
-    exit 65
-}
-
-validate_system_root /etc/s6/user/sv
-validate_system_root /etc/s6/user/adminsv
-validate_user_root "$config_home/s6/sv"
-
-mkdir -p "$base"
-rm -rf "$tmp" "$source_tree" "$compiled" "$scandir" "$live"
-mkdir -p "$tmp/source" "$scandir"
-stage_root /etc/s6/user/sv
-stage_root /etc/s6/user/adminsv
-stage_root "$config_home/s6/sv"
-[ -f "$tmp/source/default/type" ] || {
-    echo "no default user service bundle is available" >&2
-    exit 65
-}
-[ "$(cat "$tmp/source/default/type")" = bundle ] || {
-    echo "default user service must be a bundle" >&2
-    exit 65
-}
-
-s6-rc-compile "$tmp/compiled" "$tmp/source"
-mv "$tmp/source" "$source_tree"
-mv "$tmp/compiled" "$compiled"
-
+rm -rf "$scandir" "$live" "$stmpdir"
+mkdir -p "$scandir" "$stmpdir"
 s6-svscan "$scandir" &
 svscan_pid=$!
 count=0
 until s6-svscanctl -a "$scandir" 2>/dev/null; do
-    kill -0 "$svscan_pid" 2>/dev/null || {
-        wait "$svscan_pid" || :
-        echo "s6-svscan exited during startup" >&2
-        exit 1
-    }
+    kill -0 "$svscan_pid" 2>/dev/null || { echo 's6-svscan exited during startup' >&2; exit 1; }
     count=$((count + 1))
-    [ "$count" -lt 3000 ] || {
-        echo "timed out waiting for s6-svscan" >&2
-        exit 1
-    }
+    [ "$count" -lt 3000 ] || { echo 's6-svscan startup timed out' >&2; exit 1; }
     sleep 0.01
 done
-
-s6-rc-init -c "$compiled" -l "$live" "$scandir"
+live_started=1
+s6-rc-init -c "$bootdb" -l "$live" "$scandir"
 s6-rc -l "$live" -u change default
-
 eval "printf '\\n' >&$ready_fd"
-close_ready
-
+eval "exec $ready_fd>&-"
 status=0
-while kill -0 "$svscan_pid" 2>/dev/null; do
-    status=0
-    wait "$svscan_pid" || status=$?
-    [ "$status" -gt 128 ] || break
-done
-[ "$status" -eq 0 ] || {
-    echo "s6-svscan exited with status $status" >&2
-    exit "$status"
-}
-stop_manager
-trap - EXIT
-exit 0
+wait "$svscan_pid" || status=$?
+svscan_pid=
+[ "$status" -eq 0 ] || { echo "s6-svscan exited with status $status" >&2; exit "$status"; }

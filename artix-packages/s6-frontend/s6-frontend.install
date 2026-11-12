@@ -1,0 +1,19 @@
+#!/bin/sh
+
+post_upgrade() {
+  local path
+  if [ "$(vercmp $2 0.2.0.0)" -lt 0 ]; then
+    echo "Major upgrade of s6-rc and s6-frontend."
+    echo "The s6-rc database will be recompiled and then upgraded to the new format."
+    ( cd /etc/s6/repo/sources
+      for i in *; do
+        path=$(readlink "$i") || continue
+        mv -- "$path" ".real${path}" &&
+          ln -s -- ".real${path}" "${i}.new" &&
+          mv -f "${i}.new" "$i"
+      done )
+    s6 set commit
+    cp -r /etc/s6/repo/compiled/current/metainfo /run/s6-rc/compiled
+    s6 live install --no-snapshot
+  fi
+}

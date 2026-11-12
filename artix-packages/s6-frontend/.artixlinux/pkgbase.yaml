@@ -1,0 +1,60 @@
+---
+team: system
+actions:
+  addRepo: system
+  removeRepo: system-gremlins
+  triggersBuild: false
+  triggersRebuild: false
+  triggersRepoAdd: true
+  triggersRepoRemove: true
+  triggersNoCheck: false
+repos:
+  system-goblins:
+    version: null
+    packages: []
+    debug: []
+  system-gremlins:
+    version: null
+    packages: []
+    debug: []
+  system:
+    version: 0.2.0.0-2
+    packages:
+      - s6-frontend-0.2.0.0-2-x86_64.pkg.tar.zst
+    debug: []
+  world-goblins:
+    version: null
+    packages: []
+    debug: []
+  world-gremlins:
+    version: null
+    packages: []
+    debug: []
+  world:
+    version: null
+    packages: []
+    debug: []
+  lib32-goblins:
+    version: null
+    packages: []
+    debug: []
+  lib32-gremlins:
+    version: null
+    packages: []
+    debug: []
+  lib32:
+    version: null
+    packages: []
+    debug: []
+  galaxy-goblins:
+    version: null
+    packages: []
+    debug: []
+  galaxy-gremlins:
+    version: null
+    packages: []
+    debug: []
+  galaxy:
+    version: null
+    packages: []
+    debug: []

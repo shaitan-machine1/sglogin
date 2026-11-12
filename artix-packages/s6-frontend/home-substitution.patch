@@ -1,0 +1,42 @@
+Allow $HOME and ${HOME} in the user configuration, alongside the XDG variables.
+Reserve two additional argv entries for HOME's sed expression.
+
+--- a/src/s6-frontend/s6.c
++++ b/src/s6-frontend/s6.c
+@@ -86,11 +86,11 @@
+     conf_overrides++ ;
+   }
+ 
+-  char const *newargv[(wgolb & GOLB_USER ? 17 : 4) + 1 + conf_overrides + 1 + (wgolb & GOLB_HELP ? 1 : argc) + 1] ;
++  char const *newargv[(wgolb & GOLB_USER ? 19 : 4) + 1 + conf_overrides + 1 + (wgolb & GOLB_HELP ? 1 : argc) + 1] ;
+ 
+   if (wgolb & GOLB_USER)
+   {
+-    static char const *const xdgvar[5] =
++    static char const *const xdgvar[6] =
+     {
+       "XDG_RUNTIME_DIR",
+       "XDG_DATA_HOME",
+@@ -98,10 +98,11 @@
+       "XDG_STATE_HOME",
+       "XDG_CACHE_HOME",
++      "HOME",
+     } ;
+-    ssize_t xdgpos[5] = { -1, -1, -1, -1, -1 } ;
++    ssize_t xdgpos[6] = { -1, -1, -1, -1, -1, -1 } ;
+     int dosubst = 0 ;
+     int fd ;
+-    for (unsigned int i = 0 ; i < 5 ; i++)
++    for (unsigned int i = 0 ; i < 6 ; i++)
+     {
+       char const *x = getenv(xdgvar[i]) ;
+       if (x)
+@@ -133,7 +134,7 @@
+     {
+       newargv[m++] = EXECLINE_BINPREFIX "pipeline" ;
+       newargv[m++] = " sed" ;
+-      for (unsigned int i = 0 ; i < 5 ; i++) if (xdgpos[i] >= 0)
++      for (unsigned int i = 0 ; i < 6 ; i++) if (xdgpos[i] >= 0)
+       {
+         newargv[m++] = " -e" ;
+         newargv[m++] = sa.s + xdgpos[i] ;

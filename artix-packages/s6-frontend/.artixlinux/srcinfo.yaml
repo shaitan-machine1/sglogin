@@ -1,0 +1,37 @@
+---
+version: 0.2.0.0-2
+pkgbase:
+  name: s6-frontend
+  pkgdesc: A higher-level interface to the s6 ecosystem.
+  pkgver: 0.2.0.0
+  pkgrel: 2
+  url: https://skarnet.org/software/s6-frontend
+  install: s6-frontend.install
+  arch:
+    - x86_64
+  license:
+    - ISC
+  makedepends:
+    - git
+  depends:
+    - s6
+    - s6-rc
+    - s6-linux-init
+  backup:
+    - etc/s6-frontend.conf
+  source:
+    - https://skarnet.org/software/s6-frontend/s6-frontend-0.2.0.0.tar.gz
+    - s6-frontend.conf
+  sha256sums:
+    - 4bce4e9bec8c1de9e3ee5ef764580421504a3c6303eff96997b69d1b89219536
+    - 4805d0c844cfe43685f4f0c5e1d3c24b150339779e335266619e366bfa62a2d1
+pkgname:
+  - name: s6-frontend
+    depends:
+      - s6
+      - s6-rc
+      - s6-linux-init
+      - libs6.so
+      - libs6rc.so
+      - libs6_linux_init.so
+# generated with artixpkg 0.40.0-1-any
