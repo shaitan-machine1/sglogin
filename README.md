@@ -3,6 +3,8 @@
 
 SGLogin is a login suite - a collection of independent programs that handle seats, sessions, and in future - power management and polkit. It is an alternative to [Systemd-logind][logind], [Elogind][elogind], Seatd, [Turnstile][turnstile].
 
+There currently are no community chats. If you want to discuss anything related to the project, use [Github Discussions](https://github.com/shaitan-machine1/sglogin/discussions).
+
 ## Installation
 
 See the [Artix Linux / s6 installation guide](INSTALL.md) for a single-seat setup.
