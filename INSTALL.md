@@ -83,7 +83,7 @@ DBUS_SESSION_BUS_ADDRESS DEFAULT=unix:path=${XDG_RUNTIME_DIR}/bus
 
 ## 4. Start the seat0 login screen
 
-The defaults use VT7 for greetd and reserve VT7–12 for Multiseatd. If something already uses VT7–12, disable it or change `VTS` in `/etc/conf.d/multiseatd-seat0` and the matching VT udev reservation. Keep greetd's configured VT in that set. Normal Artix VT1–6 gettys can remain enabled.
+The defaults use VT7 for greetd and reserve VT7–12 for Multiseatd. If something already uses VT7–11, disable it or change `VTS` in `/etc/conf.d/multiseatd-seat0` and the matching VT udev reservation. Keep greetd's configured VT in that set. Normal Artix VT1–6 gettys can remain enabled.
 
 Reload system-bus policy and the relevant device rules before starting:
 
@@ -92,18 +92,23 @@ sudo udevadm control --reload
 sudo udevadm trigger --action=change
 sudo udevadm settle
 
-sudo s6 repository sync
-sudo s6 enable dbus-srv sessiond-srv sessiond-log \
-  multiseatd-seat0-srv multiseatd-seat0-log
+# Enable sessiond and D-Bus
+sudo s6 repo sync
+sudo s6 enable dbus sessiond
 sudo s6 apply
 
-sudo s6 enable greetd-seat0-srv greetd-seat0-log
-sudo s6 apply
+sudo s6 live start sessiond greetd-seat0 multiseatd-seat0
 ```
 
 After that, you should see greeter on VT7 showing graphical login menu. If you still see the terminal, press `Ctrl+Alt+F7` to switch.
 
 Select the desktop that you need, and log into your account.
+
+**Only** after it's proven to work, enable these services on startup
+```sh
+sudo s6 enable sessiond greetd-seat0 multiseatd-seat0
+sudo s6 apply
+```
 
 ## 5. Enable the user's D-Bus and audio services
 
