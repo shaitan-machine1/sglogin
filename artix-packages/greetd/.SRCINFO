@@ -1,7 +1,7 @@
 pkgbase = greetd-multiseatd
-	pkgdesc = Privileged per-session PAM hosts with certified multiseatd handoff and stock ReGreet in Cage
+	pkgdesc = Upstream-based greetd with PAM-only sessions and minimal multiseatd integration
 	pkgver = 0.10.3
-	pkgrel = 7
+	pkgrel = 8
 	url = https://github.com/shaitan-machine1/greetd
 	arch = x86_64
 	license = GPL-3.0-only
@@ -16,19 +16,17 @@ pkgbase = greetd-multiseatd
 	depends = esysusers
 	depends = etmpfiles
 	depends = multiseatd>=0.4.1
-	depends = sessiond
 	depends = cage
 	depends = greetd-regreet
 	optdepends = sglogin-weston-desktop-entry: managed Weston desktop entrypoint
 	provides = greetd=0.10.3
 	conflicts = greetd
-	conflicts = pam_rundir
 	backup = etc/greetd/seat0.toml
 	backup = etc/greetd/seat1.toml
 	backup = etc/pam.d/greetd
 	backup = etc/pam.d/greetd-greeter
 	backup = etc/tmpfiles.d/regreet.conf
-	source = git+https://github.com/shaitan-machine1/greetd.git#commit=23c1abb3e3656b9aff6b16f554ca2c13431c1c8e
+	source = git+https://github.com/shaitan-machine1/greetd.git#commit=118a0cfd6da0405cab74fab2bb9aeea885160168
 	source = greetd.pam
 	source = greetd-greeter.pam
 	source = greetd.sysusers

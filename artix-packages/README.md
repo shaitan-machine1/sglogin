@@ -14,7 +14,7 @@ never installs packages or changes services, PAM, devices or terminal modes.
 | `multiseatd` | v0.4.1, `49834268db6fdfee8f061f6c13392d54b1f6fe83`; both daemon variants, with-seat/without-seat wrappers, per-seat bus policy and seat/uaccess rules |
 | `sessiond` | v0.1.1, `c87c83d8929fbe0fe63d0012324fbd7f957e98c0`; PAM sessions/runtime for every UID, user managers default to UID >= 1000 |
 | `loginctl` | v0.3.3, `a1f0a59435af8b73d37afc9a8197cbc1714ca02b`; blocking administration, sessiond 0.1.1 config and explicit configured-seat refresh |
-| `greetd` | `greetd-multiseatd` 0.10.3-7; direct maintained v0.10.3-sglogin.5, `23c1abb3e3656b9aff6b16f554ca2c13431c1c8e`; privileged exec'd PAM hosts |
+| `greetd` | `greetd-multiseatd` 0.10.3-8; v0.10.3-sglogin.6, `118a0cfd6da0405cab74fab2bb9aeea885160168`; clean-upstream-based minimal multiseatd integration |
 | `weston-desktop-entry` | `sglogin-weston-desktop-entry`; distinct Weston (SGLogin) entry and strict launcher |
 | `seat-services` | Exactly four co-installable seat/display s6 outputs, below |
 | `s6-services` | Independent `sessiond-s6` only; session service definitions unchanged |
@@ -27,7 +27,9 @@ directories, but no user manager is started or replaced. Zero enables managers
 for every UID. The sample documents the default as a comment so currently
 installed older config readers can still parse it; explicit overrides require
 readers built against sessiond 0.1.1 (including the loginctl version above).
-Greetd's sessiond dependency is not removed by this package update.
+Greetd is independent of sessiond: no source/package/service dependency, config
+reader, containment/runtime proof or session cleanup fallback remains. Its normal
+PAM stack may use sessiond or another session manager according to system policy.
 
 No ACL daemon, SDDM, standalone seatd server, common PAM fragment, retained-session
 UI, KDE integration or s6 desktop supervisor is added.
@@ -62,8 +64,9 @@ suite.
 Each explicitly configured seat has its own daemon, contexts, catalog and ACL
 registry. The VT binary claims its **complete startup terminal set** until
 shutdown, independently of contexts/connections. Root creates immutable-bound
-contexts, explicitly deactivates an old context before activating its successor,
-and selects foreground separately. Socket arrival/EOF never chooses a context.
+contexts, withdraws an old context before activating its successor, and selects
+foreground separately. Greetd uses checked RemoveContext alone; removal also
+clears the active association, so it needs no separate deactivation/ACL removal. Socket arrival/EOF never chooses a context.
 Only the eligible foreground active VT context gets managed access; non-VT
 instances have one active context and no terminal machinery.
 
@@ -93,15 +96,15 @@ greetd-seat1-s6     -> greetd-seat1-{srv,log}
 
 dbus-srv + mount-cgroups                 -> sessiond-srv
 dbus-srv + udevadm                       -> multiseatd-seatN-srv
-sessiond-srv + multiseatd-seatN-srv
+multiseatd-seatN-srv
   + mounts/tmpfiles + root readiness     -> greetd-seatN-srv
 ```
 
 Seat0 executes `multiseatd-vt --seat seat0 --vts 7,8,9,10,11`; seat1 executes
 `multiseatd --seat seat1`. Corresponding greetd defaults are seat0/VT7 and non-VT
 seat1. Only greetd-seat0-s6 provides/conflicts with init-greetd; seat1 is additive.
-Installing outputs does not enable services. Readiness is root ListContexts plus
-session inventory, not ordering alone or proof of compositor/driver readiness.
+Installing outputs does not enable services. Greetd readiness is root ListContexts,
+not session inventory, ordering alone or proof of compositor/driver readiness.
 
 Before enabling seat0, reserve VT7–11 with **no gettys/competing controllers**;
 retain Artix's tty12 recovery getty outside that set. Its service output owns
@@ -109,7 +112,9 @@ retain Artix's tty12 recovery getty outside that set. Its service output owns
 text terminals. Review conf.d VTS and this rule together. Do not silently stop a
 getty or steal a terminal. Unused claimed VTs may be black. Extra explicitly
 configured greetd controllers can use other claimed VTs without another default
-service output; their runfile/socket/lock and logs must remain seat-plus-VT scoped.
+service output; give them distinct general.runfile boot markers and logs.
+Upstream PID-qualified GREETD_SOCK paths already distinguish controller sockets;
+there is no run_directory setting or new instance-lock mechanism.
 
 For migration, stop/retire old global access and graphical owners first, remove
 old global service outputs/admin seat1 clones explicitly, then install/select the
@@ -119,20 +124,31 @@ services, persistent lock inodes, recovery and the selected init packages.
 
 ## Greetd, PAM and launch boundaries
 
-The privileged PAM host creates/verifies immutable metadata **before PAM**, opens
-the session on Start, grants the final verified UID, activates by root ID and
-foregrounds only the initial greeter. Main supervises generic workers, not context
-IDs or RPC recovery. Positive device teardown must reach main **before PAM close**;
-Pending, timeout or death without proof cannot authorize the next normal Start.
-Final PAM/worker results remain separate. Upstream controller exit/short-session
-behavior and external restart supervision are preserved; no GPU retry loop.
+The privileged exec'd PAM worker creates a context and supplies immutable metadata
+**before PAM**, opens the session on Start, grants the final PAM UID, activates
+by root ID and foregrounds only the initial VT-backed greeter. It uses checked
+RemoveContext alone for normal/error teardown; positive device-removal proof is
+sent **before PAM close**. Pending, timeout, owner loss or worker death without
+proof stops normal handoff; main has no context IDs or RPC recovery. Final PAM
+outcomes remain separate. Ordinary upstream authentication, child supervision,
+controller exit/short-session behavior and external restart remain; no GPU retry
+loop or replacement supervisor is introduced.
 
-Artix greetd includes system-local-login/system-login. Activate pam_sessiond
-**once centrally**, before pam_env, using `loginctl pam activate` only during an
-authorized installation. No recipe edits live PAM or duplicates the module in
-greetd. Greetd requires actual sessiond containment and verified runtime ownership,
-not merely fail-open PAM success. Do not run pam_rundir/pam_elogind/pam_turnstile
-runtime ownership alongside it.
+Configure `[multiseatd]` with explicit seat and either positive vt (seat0: 7) or
+vt="none" (seat1, API zero). Do not combine this with `[terminal]` or --vt.
+Services select --config only; greetd performs no direct Linux VT setup/reset
+in this mode. Existing PID sockets and distinct general.runfile markers replace
+the former run_directory configuration.
+
+Artix greetd retains the distribution system-local-login/system-login includes.
+No recipe edits live PAM, activates a session manager or duplicates a module in
+greetd. Overall PAM policy governs login: optional session-management failure
+may permit trying the command. Greetd neither requires nor creates a runtime
+directory; a compositor can still fail if its ordinary requirements are absent.
+When choosing a runtime/session manager, avoid competing ownership according to
+that manager's integration instructions. Sessiond remains separately installable;
+its optional PAM use is not a display-manager requirement. Worker crashes may
+leave residual sessions/processes; greetd does not sweep them.
 
 `/etc/tmpfiles.d/regreet.conf` overrides the distro's same-basename fragment,
 providing one effective definition for greeter-owned state/log directories at

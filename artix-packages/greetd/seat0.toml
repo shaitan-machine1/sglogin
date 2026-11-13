@@ -1,9 +1,9 @@
 [general]
 service = "greetd"
-[multiseat]
+runfile = "/run/greetd-seat0-vt7.run"
+[multiseatd]
 seat = "seat0"
 vt = 7
-run_directory = "/run/greetd-seat0"
 [default_session]
 command = "/usr/bin/cage -s -- /usr/bin/regreet"
 user = "greeter"

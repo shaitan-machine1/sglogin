@@ -1,2 +1,1 @@
 CONFIG=/etc/greetd/seat0.toml
-VT=7

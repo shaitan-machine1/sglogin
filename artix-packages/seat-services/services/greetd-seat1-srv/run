@@ -3,5 +3,4 @@ set -eu
 exec 2>&1
 . /etc/conf.d/greetd-seat1
 timeout 12 /usr/bin/loginctl seat context seat1 list >/dev/null
-timeout 12 /usr/bin/loginctl session list >/dev/null
-exec /usr/bin/greetd --config "$CONFIG" --seat seat1
+exec /usr/bin/greetd --config "$CONFIG"

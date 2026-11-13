@@ -1,6 +1,6 @@
 #%PAM-1.0
-# Preserve Artix authentication/account policy. pam_sessiond belongs centrally
-# in system-login, reached once through system-local-login, never duplicated.
+# Preserve Artix authentication/account/session policy without requiring
+# a particular session-management module.
 auth       required     pam_securetty.so
 auth       requisite    pam_nologin.so
 auth       include      system-local-login

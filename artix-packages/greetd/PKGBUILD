@@ -1,17 +1,17 @@
 pkgname=greetd-multiseatd
 pkgver=0.10.3
-pkgrel=7
-pkgdesc='Privileged per-session PAM hosts with certified multiseatd handoff and stock ReGreet in Cage'
+pkgrel=8
+pkgdesc='Upstream-based greetd with PAM-only sessions and minimal multiseatd integration'
 arch=(x86_64)
 url='https://github.com/shaitan-machine1/greetd'
 license=(GPL-3.0-only)
-depends=(dbus gcc-libs glibc pam pambase esysusers etmpfiles 'multiseatd>=0.4.1' sessiond cage greetd-regreet)
+depends=(dbus gcc-libs glibc pam pambase esysusers etmpfiles 'multiseatd>=0.4.1' cage greetd-regreet)
 makedepends=(cargo git rust)
 provides=(greetd=0.10.3)
-conflicts=(greetd pam_rundir)
+conflicts=(greetd)
 optdepends=('sglogin-weston-desktop-entry: managed Weston desktop entrypoint')
 backup=('etc/greetd/seat0.toml' 'etc/greetd/seat1.toml' 'etc/pam.d/greetd' 'etc/pam.d/greetd-greeter' 'etc/tmpfiles.d/regreet.conf')
-_commit=23c1abb3e3656b9aff6b16f554ca2c13431c1c8e
+_commit=118a0cfd6da0405cab74fab2bb9aeea885160168
 source=("git+https://github.com/shaitan-machine1/greetd.git#commit=$_commit"
         greetd.pam greetd-greeter.pam greetd.sysusers regreet.conf seat0.toml seat1.toml)
 sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
@@ -21,7 +21,7 @@ prepare() {
 }
 build() {
   cd "$srcdir/greetd"
-  # Never ship test-support (private PAM, preload and mlock bypass hooks).
+  # Never ship test-support (the private harness's compile-time mlock bypass).
   CARGO_TARGET_DIR=target cargo build --release --locked --offline -p greetd
 }
 check() {
