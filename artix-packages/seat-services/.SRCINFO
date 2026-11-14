@@ -1,16 +1,10 @@
 pkgbase = seat-services
 	pkgver = 0.1.0
-	pkgrel = 3
+	pkgrel = 4
 	url = https://github.com/shaitan-machine1/sglogin
 	arch = any
 	license = GPL-3.0-only
-	source = multiseatd-seat0
-	source = greetd-seat0
-	source = greetd-seat1
 	source = 74-multiseatd-vts.rules
-	sha256sums = SKIP
-	sha256sums = SKIP
-	sha256sums = SKIP
 	sha256sums = SKIP
 
 pkgname = multiseatd-seat0-s6
@@ -20,7 +14,6 @@ pkgname = multiseatd-seat0-s6
 	depends = s6-base
 	depends = s6-rc
 	depends = udev
-	backup = etc/conf.d/multiseatd-seat0
 
 pkgname = multiseatd-seat1-s6
 	pkgdesc = Non-VT multiseatd seat1 s6 service
@@ -43,7 +36,6 @@ pkgname = greetd-seat0-s6
 	provides = init-greetd
 	conflicts = init-greetd
 	conflicts = init-sddm
-	backup = etc/conf.d/greetd-seat0
 
 pkgname = greetd-seat1-s6
 	pkgdesc = Additional non-VT PAM-only greetd seat1 controller s6 service
@@ -55,4 +47,3 @@ pkgname = greetd-seat1-s6
 	depends = s6-base
 	depends = s6-rc
 	depends = udev
-	backup = etc/conf.d/greetd-seat1

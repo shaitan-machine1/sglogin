@@ -1,6 +1,5 @@
 #!/bin/sh
 set -eu
 exec 2>&1
-. /etc/conf.d/greetd-seat1
 timeout 12 /usr/bin/loginctl seat context seat1 list >/dev/null
-exec /usr/bin/greetd --config "$CONFIG"
+exec /usr/bin/greetd --config /etc/greetd/seat1.toml

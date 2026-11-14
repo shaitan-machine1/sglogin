@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eu
 exec 2>&1
-. /etc/conf.d/multiseatd-seat0
-exec /usr/bin/multiseatd-vt --seat seat0 --vts "$VTS"
+# Keep the complete reservation aligned with 74-multiseatd-vts.rules and
+# getty configuration; preserve tty12 for recovery.
+exec /usr/bin/multiseatd-vt --seat seat0 --vts 7,8,9,10,11

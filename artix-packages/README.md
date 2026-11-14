@@ -106,12 +106,20 @@ seat1. Only greetd-seat0-s6 provides/conflicts with init-greetd; seat1 is additi
 Installing outputs does not enable services. Greetd readiness is root ListContexts,
 not session inventory, ordering alone or proof of compositor/driver readiness.
 
+Launch arguments are explicit in the s6 service scripts; these outputs do not
+install or read `/etc/conf.d` files. Greetd services select `/etc/greetd/seat0.toml`
+and `/etc/greetd/seat1.toml`; seat/VT and greeter settings remain in those TOML
+files. Display logs use `/var/log/greetd-seat0` and `/var/log/greetd-seat1`, with
+no VT-setting dependency. Custom launch arguments require editing the service
+scripts, which package upgrades overwrite.
+
 Before enabling seat0, reserve VT7–11 with **no gettys/competing controllers**;
 retain Artix's tty12 recovery getty outside that set. Its service output owns
 `74-multiseatd-vts.rules`, protecting exactly VT7–11, tty0 and console, never all
-text terminals. Review conf.d VTS and this rule together. Do not silently stop a
-getty or steal a terminal. Unused claimed VTs may be black. Extra explicitly
-configured greetd controllers can use other claimed VTs without another default
+text terminals. Review the VT list in `multiseatd-seat0-srv/run`, this rule and
+getty configuration together. Do not silently stop a getty or steal a terminal.
+Unused claimed VTs may be black. Extra explicitly configured greetd controllers
+can use other claimed VTs without another default
 service output; give them distinct general.runfile boot markers and logs.
 Upstream PID-qualified GREETD_SOCK paths already distinguish controller sockets;
 there is no run_directory setting or new instance-lock mechanism.

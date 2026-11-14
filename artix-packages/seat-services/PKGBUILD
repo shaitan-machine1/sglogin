@@ -1,12 +1,12 @@
 pkgbase=seat-services
 pkgname=(multiseatd-seat0-s6 multiseatd-seat1-s6 greetd-seat0-s6 greetd-seat1-s6)
 pkgver=0.1.0
-pkgrel=3
+pkgrel=4
 arch=(any)
 url='https://github.com/shaitan-machine1/sglogin'
 license=(GPL-3.0-only)
-source=(multiseatd-seat0 greetd-seat0 greetd-seat1 74-multiseatd-vts.rules)
-sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP')
+source=(74-multiseatd-vts.rules)
+sha256sums=('SKIP')
 
 _install_services() {
   install -d "$pkgdir/etc/s6/sv"
@@ -17,9 +17,7 @@ _install_services() {
 package_multiseatd-seat0-s6() {
   pkgdesc='Native VT7–11 multiseatd seat0 s6 service'
   depends=(dbus-s6 'multiseatd>=0.4.0' s6-base s6-rc udev)
-  backup=('etc/conf.d/multiseatd-seat0')
   _install_services multiseatd-seat0-srv multiseatd-seat0-log
-  install -Dm644 "$srcdir/multiseatd-seat0" "$pkgdir/etc/conf.d/multiseatd-seat0"
   install -Dm644 "$srcdir/74-multiseatd-vts.rules" "$pkgdir/usr/lib/udev/rules.d/74-multiseatd-vts.rules"
 }
 package_multiseatd-seat1-s6() {
@@ -32,14 +30,10 @@ package_greetd-seat0-s6() {
   depends=(coreutils dbus-s6 greetd-multiseatd loginctl multiseatd-seat0-s6 s6-base s6-rc udev)
   provides=(init-greetd)
   conflicts=(init-greetd init-sddm)
-  backup=('etc/conf.d/greetd-seat0')
   _install_services greetd-seat0-srv greetd-seat0-log
-  install -Dm644 "$srcdir/greetd-seat0" "$pkgdir/etc/conf.d/greetd-seat0"
 }
 package_greetd-seat1-s6() {
   pkgdesc='Additional non-VT PAM-only greetd seat1 controller s6 service'
   depends=(coreutils dbus-s6 greetd-multiseatd loginctl multiseatd-seat1-s6 s6-base s6-rc udev)
-  backup=('etc/conf.d/greetd-seat1')
   _install_services greetd-seat1-srv greetd-seat1-log
-  install -Dm644 "$srcdir/greetd-seat1" "$pkgdir/etc/conf.d/greetd-seat1"
 }

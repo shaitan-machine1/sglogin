@@ -1,4 +1,0 @@
-# Reserve this complete, disjoint set before enabling the service. No gettys on
-# VT7–11; preserve Artix's tty12 recovery getty. Coordinate changes with
-# 74-multiseatd-vts.rules.
-VTS=7,8,9,10,11
