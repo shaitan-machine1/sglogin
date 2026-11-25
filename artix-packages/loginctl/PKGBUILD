@@ -1,5 +1,5 @@
 pkgname=loginctl
-pkgver=0.3.3
+pkgver=0.4.0
 pkgrel=1
 pkgdesc='Unified administration for the decoupled login stack'
 arch=(x86_64)
@@ -9,9 +9,9 @@ depends=(dbus gcc-libs glibc libudev udev)
 makedepends=(cargo git rust)
 checkdepends=(pam)
 optdepends=('multiseatd>=0.4.0: administer explicitly configured seats and contexts'
-            'sessiond: inspect and close managed sessions')
+            'sessiond>=0.2.0: inspect and close managed sessions')
 backup=('etc/loginctl.conf')
-_commit=a1f0a59435af8b73d37afc9a8197cbc1714ca02b
+_commit=f8c241ba7a425e082b8ce0d1b683e28cb6a9ae76
 source=("git+https://github.com/shaitan-machine1/loginctl.git#commit=$_commit"
         loginctl.conf)
 sha256sums=('SKIP' 'SKIP')

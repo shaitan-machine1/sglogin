@@ -1,15 +1,15 @@
 pkgname=sessiond
-pkgver=0.1.1
+pkgver=0.2.0
 pkgrel=1
-pkgdesc='PAM-integrated session lifecycle service'
+pkgdesc='Local session SDK, PAM modules and daemon-owned session lifecycle'
 arch=(x86_64)
 url='https://github.com/shaitan-machine1/sessiond'
 license=(GPL-3.0-only)
-provides=('session-manager')
+provides=('session-manager' 'libsessiond.so')
 depends=(dbus gcc-libs glibc pam user-service-manager)
 makedepends=(cargo git rust)
-backup=('etc/sessiond.conf' 'etc/pam.d/sessiond-user')
-_commit=c87c83d8929fbe0fe63d0012324fbd7f957e98c0
+backup=('etc/sessiond.conf' 'etc/pam.d/sessiond-session' 'etc/pam.d/sessiond-user')
+_commit=7b2038f3bc43c3c1c9ba030762672668a69b3f66
 source=("git+https://github.com/shaitan-machine1/sessiond.git#commit=$_commit")
 sha256sums=('SKIP')
 
@@ -22,7 +22,14 @@ build() {
 check() {
   cd "$srcdir/sessiond"
   SESSIOND_USER_SERVICE_MANAGER=/usr/libexec/user-service-manager \
-    CARGO_TARGET_DIR=target cargo test --release --locked --workspace
+    CARGO_TARGET_DIR=target cargo test --release --locked --workspace --all-targets
+  ./tests/pam-syslog.sh
+  local stage="$srcdir/sdk-stage"
+  mkdir -p "$stage/usr/lib" "$stage/usr/include"
+  cp target/release/liblib_sessiond.so "$stage/usr/lib/libsessiond.so.0"
+  ln -sfn libsessiond.so.0 "$stage/usr/lib/libsessiond.so"
+  cp crates/lib-sessiond/include/sessiond.h "$stage/usr/include/sessiond.h"
+  ./tests/sdk-smoke.sh "$stage"
 }
 
 package() {
@@ -30,11 +37,19 @@ package() {
   install -Dm755 target/release/sessiond "$pkgdir/usr/bin/sessiond"
   install -Dm755 target/release/sessiond-user-launcher \
     "$pkgdir/usr/libexec/sessiond/sessiond-user-launcher"
-  install -Dm755 target/release/libpam_sessiond.so \
-    "$pkgdir/usr/lib/security/pam_sessiond.so"
+  install -Dm755 target/release/libpam_sessiond_core.so \
+    "$pkgdir/usr/lib/security/pam_sessiond_core.so"
+  install -Dm755 target/release/libpam_sessiond_ready.so \
+    "$pkgdir/usr/lib/security/pam_sessiond_ready.so"
+  install -Dm755 target/release/liblib_sessiond.so "$pkgdir/usr/lib/libsessiond.so.0"
+  ln -s libsessiond.so.0 "$pkgdir/usr/lib/libsessiond.so"
+  install -Dm644 crates/lib-sessiond/include/sessiond.h "$pkgdir/usr/include/sessiond.h"
   install -Dm644 dist/sessiond.conf "$pkgdir/etc/sessiond.conf"
+  install -Dm644 dist/pam/sessiond-session "$pkgdir/etc/pam.d/sessiond-session"
   install -Dm644 dist/pam/sessiond-user "$pkgdir/etc/pam.d/sessiond-user"
-  install -Dm644 dist/dbus/org.decoupling.sessiond1.conf \
-    "$pkgdir/usr/share/dbus-1/system.d/org.decoupling.sessiond1.conf"
+  install -Dm644 dist/dbus/org.SGLogin.Sessiond1.conf \
+    "$pkgdir/usr/share/dbus-1/system.d/org.SGLogin.Sessiond1.conf"
+  install -Dm644 dist/dbus/org.SGLogin.Sessiond1.xml \
+    "$pkgdir/usr/share/dbus-1/interfaces/org.SGLogin.Sessiond1.xml"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

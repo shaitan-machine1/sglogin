@@ -12,26 +12,28 @@ never installs packages or changes services, PAM, devices or terminal modes.
 | --- | --- |
 | `libseat` | Maintained C libseat 0.9.3-2; `seatd` commit `42fe3abfdcaefd2d5cbd21f9db803b9da6a2ca6c`; inherited SEATD_FD and explicit native multiseatd backend, no seatd daemon |
 | `multiseatd` | v0.4.1, `49834268db6fdfee8f061f6c13392d54b1f6fe83`; both daemon variants, with-seat/without-seat wrappers, per-seat bus policy and seat/uaccess rules |
-| `sessiond` | v0.1.1, `c87c83d8929fbe0fe63d0012324fbd7f957e98c0`; PAM sessions/runtime for every UID, user managers default to UID >= 1000 |
-| `loginctl` | v0.3.3, `a1f0a59435af8b73d37afc9a8197cbc1714ca02b`; blocking administration, sessiond 0.1.1 config and explicit configured-seat refresh |
+| `sessiond` | v0.2.0, `7b2038f3bc43c3c1c9ba030762672668a69b3f66`; local/C SDK, required core + optional readiness PAM, daemon-owned lifecycle |
+| `loginctl` | v0.4.0, `f8c241ba7a425e082b8ce0d1b683e28cb6a9ae76`; matching sessiond 0.2.0 SDK/scoped pins, daemon session queries/close and named PAM include |
 | `greetd` | `greetd-multiseatd` 0.10.3-8; v0.10.3-sglogin.6, `118a0cfd6da0405cab74fab2bb9aeea885160168`; clean-upstream-based minimal multiseatd integration |
 | `weston-desktop-entry` | `sglogin-weston-desktop-entry`; distinct Weston (SGLogin) entry and strict launcher |
 | `seat-services` | Exactly four co-installable seat/display s6 outputs, below |
 | `s6-services` | Independent `sessiond-s6` only; session service definitions unchanged |
 
 `sessiond`, `init-logind-none`, `s6-user-service-manager` and optional disabled
-`dbus-s6-user`/`pipewire-s6-user` remain separate. Session APIs are unchanged.
-`user_service_manager.min_uid` defaults to 1000 even with an existing unchanged
-`/etc/sessiond.conf`: lower UIDs still receive sessions, containment and runtime
-directories, but no user manager is started or replaced. Zero enables managers
-for every UID. The sample documents the default as a comment so currently
-installed older config readers can still parse it; explicit overrides require
-readers built against sessiond 0.1.1 (including the loginctl version above).
+`dbus-s6-user`/`pipewire-s6-user` remain separate. Sessiond 0.2.0 is a breaking
+development API at `org.SGLogin.Sessiond1`, without legacy aliases. Local opening
+creates containment/master/SID without a daemon, runtime directory or manager.
+Readiness separately validates runtime and starts eligible managers;
+`user_service_manager.min_uid` defaults to 1000 and zero enables every UID.
+Below-threshold readiness needs no working manager; the threshold never suppresses
+cleanup of existing resources. Only the daemon reads full `sessiond.conf`.
+Loginctl uses blocking daemon inventory/master queries; `CloseSession`
+waits only for session-tree removal, not subsequent manager/runtime cleanup.
 Greetd is independent of sessiond: no source/package/service dependency, config
 reader, containment/runtime proof or session cleanup fallback remains. Its normal
 PAM stack may use sessiond or another session manager according to system policy.
 
-No ACL daemon, SDDM, standalone seatd server, common PAM fragment, retained-session
+No ACL daemon, SDDM, standalone seatd server, retained-session
 UI, KDE integration or s6 desktop supervisor is added.
 Cage, greetd-regreet and Weston are ordinary **unmodified distro packages**, not
 maintained recipes here. Greetd uses its published fork directly, not a patch
@@ -58,6 +60,16 @@ use dependency-ignore flags for installation. Build archives are not deployment
 or hardware acceptance. Set PKGDEST for archives outside recipe directories.
 Recipes retain component/source check phases; there is no separate package test
 suite.
+
+Sessiond stages the daemon/launcher, both PAM modules, named `sessiond-session`,
+private `sessiond-user`, config and SGLogin D-Bus policy/XML. The SDK mapping is
+`libsessiond.so.0` (SONAME `libsessiond.so.0`), linker symlink `libsessiond.so` and
+`sessiond.h`. Its checks include private PAM failure/sanitization and staged C
+compile/link/export/dependency checks; the SDK has no PAM or executor linkage.
+Loginctl's checks cover a private required-core/optional-readiness named include
+before `pam_env`. Both recipes use their normal immutable public Git sources and
+locked dependencies. Neither package owns `system-login` or installs an activation hook; configuration
+and the source-owned named/private PAM stacks are backup-tracked.
 
 ## Seats, device access and explicit movement
 
@@ -155,7 +167,12 @@ may permit trying the command. Greetd neither requires nor creates a runtime
 directory; a compositor can still fail if its ordinary requirements are absent.
 When choosing a runtime/session manager, avoid competing ownership according to
 that manager's integration instructions. Sessiond remains separately installable;
-its optional PAM use is not a display-manager requirement. Worker crashes may
+its selection is not a display-manager requirement. The `sessiond-session`
+fragment makes core opening required and daemon readiness optional. Loginctl
+manages only the include within `# BEGIN sglogin` / `# END sglogin`, without
+validating included policy or migrating old markers. After successful runtime
+sanitation, optional readiness failure leaves runtime absent and core SID intact.
+No recipe activates the include automatically. Worker crashes may
 leave residual sessions/processes; greetd does not sweep them.
 
 `/etc/tmpfiles.d/regreet.conf` overrides the distro's same-basename fragment,
