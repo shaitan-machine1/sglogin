@@ -1,6 +1,6 @@
 pkgname=multiseatd
 pkgver=0.4.1
-pkgrel=1
+pkgrel=2
 pkgdesc='Per-seat contexts, brokered devices, exact ACLs and optional native VT ownership'
 arch=(x86_64)
 url='https://github.com/shaitan-machine1/multiseatd'
@@ -8,7 +8,7 @@ license=(GPL-3.0-only MIT)
 depends=(acl dbus gcc-libs glibc libudev 'libseat>=0.9.3-2' udev)
 makedepends=(cargo git rust)
 conflicts=(multiseat)
-_commit=49834268db6fdfee8f061f6c13392d54b1f6fe83
+_commit=11ef8e31d1aacc1c7fa7fa5de7f286cd7a5ddff5
 source=("git+https://github.com/shaitan-machine1/multiseatd.git#commit=$_commit")
 sha256sums=('SKIP')
 

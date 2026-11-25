@@ -1,0 +1,31 @@
+pkgname=lib-sglogin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Synchronous read-only SGLogin session and seat facts for Rust and C'
+arch=(x86_64)
+url='https://github.com/shaitan-machine1/lib-sglogin'
+license=(GPL-3.0-only)
+provides=('libsglogin.so')
+depends=(dbus gcc-libs glibc)
+makedepends=(cargo git pkgconf rust)
+_commit=410e7725940116c02d3dfec2d5f697b8621f1f73
+source=("git+https://github.com/shaitan-machine1/lib-sglogin.git#commit=$_commit")
+sha256sums=('SKIP')
+
+build() {
+  cd "$srcdir/lib-sglogin"
+  CARGO_TARGET_DIR=target cargo build --release --locked
+}
+
+check() {
+  cd "$srcdir/lib-sglogin"
+  CARGO_TARGET_DIR=target cargo test --release --locked --workspace --all-targets
+  SGL_LIBRARY="$PWD/target/release/libsglogin.so" ./scripts/stage.sh "$srcdir/library-stage"
+  ./tests/c-smoke.sh "$srcdir/library-stage"
+}
+
+package() {
+  cd "$srcdir/lib-sglogin"
+  SGL_LIBRARY="$PWD/target/release/libsglogin.so" ./scripts/stage.sh "$pkgdir"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

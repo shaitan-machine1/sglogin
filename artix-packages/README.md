@@ -11,8 +11,10 @@ never installs packages or changes services, PAM, devices or terminal modes.
 | Recipe | Output / source |
 | --- | --- |
 | `libseat` | Maintained C libseat 0.9.3-2; `seatd` commit `42fe3abfdcaefd2d5cbd21f9db803b9da6a2ca6c`; inherited SEATD_FD and explicit native multiseatd backend, no seatd daemon |
-| `multiseatd` | v0.4.1, `49834268db6fdfee8f061f6c13392d54b1f6fe83`; both daemon variants, with-seat/without-seat wrappers, per-seat bus policy and seat/uaccess rules |
-| `sessiond` | v0.2.0, `7b2038f3bc43c3c1c9ba030762672668a69b3f66`; local/C SDK, required core + optional readiness PAM, daemon-owned lifecycle |
+| `multiseatd` | 0.4.1-2, `11ef8e31d1aacc1c7fa7fa5de7f286cd7a5ddff5`; both daemon variants, exact context masters/public observation, wrappers, per-seat bus policy and seat/uaccess rules |
+| `sessiond` | 0.2.0-2, `7f97a43165c6865baa80800748e554c94b4359aa`; valid-only public sessions, local/C SDK, initial PAM seat attributes and caller-resolved scheduled close |
+| `lib-sglogin` | 0.1.0-1, `410e7725940116c02d3dfec2d5f697b8621f1f73`; synchronous Rust/C observation library, header and pkg-config metadata |
+| `sglogin-polkit` | 128-1, `0a9f280ff6427028fbfc2f5114b52f23b539be92`; native SGLogin provider in polkitd and client libraries; provides `polkit` and its public library SONAMEs |
 | `loginctl` | v0.4.0, `f8c241ba7a425e082b8ce0d1b683e28cb6a9ae76`; matching sessiond 0.2.0 SDK/scoped pins, daemon session queries/close and named PAM include |
 | `greetd` | `greetd-multiseatd` 0.10.3-8; v0.10.3-sglogin.6, `118a0cfd6da0405cab74fab2bb9aeea885160168`; clean-upstream-based minimal multiseatd integration |
 | `weston-desktop-entry` | `sglogin-weston-desktop-entry`; distinct Weston (SGLogin) entry and strict launcher |
@@ -23,6 +25,9 @@ never installs packages or changes services, PAM, devices or terminal modes.
 `dbus-s6-user`/`pipewire-s6-user` remain separate. Sessiond 0.2.0 is a breaking
 development API at `org.SGLogin.Sessiond1`, without legacy aliases. Local opening
 creates containment/master/SID without a daemon, runtime directory or manager.
+Public sessions require their scope, protected readiness marker and exact live
+recorded master. Core PAM copies supplied `XDG_SEAT` before daemon readiness;
+readiness publishes valid sessions only after committing the marker.
 Readiness separately validates runtime and starts eligible managers;
 `user_service_manager.min_uid` defaults to 1000 and zero enables every UID.
 Below-threshold readiness needs no working manager; the threshold never suppresses
@@ -47,7 +52,9 @@ makepkg --cleanbuild
 ```
 
 Build libseat/multiseatd/loginctl/greetd and the selected desktop entry before
-service outputs. Core builds use distinct `target/non-vt` and `target/vt`
+service outputs. Build `lib-sglogin` before `sglogin-polkit`; the latter requires
+its installed or explicitly staged development interface through pkg-config.
+Neither library build needs running SGLogin daemons. Core builds use distinct `target/non-vt` and `target/vt`
 directories; install respectively `/usr/bin/multiseatd` and
 `/usr/bin/multiseatd-vt`. SDK/launcher clients have no executor or VT feature.
 The production builds never enable test-support. Sources use SKIP checksums;
@@ -71,10 +78,46 @@ before `pam_env`. Both recipes use their normal immutable public Git sources and
 locked dependencies. Neither package owns `system-login` or installs an activation hook; configuration
 and the source-owned named/private PAM stacks are backup-tracked.
 
+## Native polkit packages
+
+`lib-sglogin` installs `libsglogin.so.0`, its linker symlink, `sglogin/login.h`,
+`libsglogin.pc` and its GPL-3.0-only license. Its Rust SDK dependencies are locked
+to published sessiond/Multiseatd commits; it does not bundle daemon binaries or
+require a separate Multiseatd C library.
+
+`sglogin-polkit` retains polkit's normal paths, D-Bus/client/agent interfaces and
+LGPL-2.0-or-later license. It provides versioned `polkit` and the existing public
+library SONAMEs, and conflicts with `polkit` because they own the same files.
+Both polkitd and libpolkit-gobject link libsglogin; no elogind/logind session
+provider dependency or runtime fallback is selected.
+
+The recipe, two distribution patches, Artix rules and install hook were copied
+from [Artix polkit packaging](https://gitea.artixlinux.org/packages/polkit.git)
+at `7666926a661b37aab5580a65eb2918026031b7a8`, not added as a nested repository.
+The patches retain explicit GID handling and Artix account defaults; the Artix
+option patch is refreshed to update the existing option. PAM configuration,
+public library provides, documentation, introspection and upstream tests remain.
+As in the Artix baseline, systemd unit files are removed from the archive; this
+adds no alternative init service graph or desktop-agent autostart.
+
+A session is local only with a verified exact-master context association on its
+selected seat; activity comes from that context's effective access state. Missing
+association cannot grant local/active policy defaults. UID/existence queries need
+only sessiond. Artix's retained `99-artix.rules` grants some actions independently
+of activity, so private provider tests use controlled rules instead.
+
+Package checks include staged C/C++ ABI/export checks and ordinary Meson tests.
+The root-owned private-bus provider test skips in normal-user package checks;
+run its isolated source harness separately for provider acceptance. Package builds
+and archive inspection authorize no installation, PAM changes or service enabling.
+
 ## Seats, device access and explicit movement
 
 Each explicitly configured seat has its own daemon, contexts, catalog and ACL
-registry. The VT binary claims its **complete startup terminal set** until
+registry. Context masters are immutable authenticated process identities; their
+exit withdraws contexts even if delegated capabilities remain open. Read-only
+context lookup and change hints are public, with privileged mutation unchanged.
+The VT binary claims its **complete startup terminal set** until
 shutdown, independently of contexts/connections. Root creates immutable-bound
 contexts, withdraws an old context before activating its successor, and selects
 foreground separately. Greetd uses checked RemoveContext alone; removal also

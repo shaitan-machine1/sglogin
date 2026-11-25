@@ -1,0 +1,83 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+
+# Copied from Artix polkit packaging at 7666926a661b37aab5580a65eb2918026031b7a8.
+pkgname=sglogin-polkit
+pkgver=128
+pkgrel=1
+pkgdesc="Application privilege policy toolkit with native SGLogin session tracking"
+url="https://github.com/shaitan-machine1/polkit"
+arch=(x86_64)
+license=(LGPL-2.0-or-later)
+depends=(
+  duktape
+  expat
+  glib2
+  glibc
+  libgcc
+  pam
+  lib-sglogin
+)
+makedepends=(
+  dbus
+  git
+  glib2-devel
+  gobject-introspection
+  gtk-doc
+  meson
+)
+checkdepends=(python-dbusmock python-gobject)
+provides=("polkit=$pkgver" libpolkit-{agent,gobject}-1.so)
+conflicts=(polkit)
+install=polkit.install
+_commit=0a9f280ff6427028fbfc2f5114b52f23b539be92
+source=(
+  "polkit::git+$url.git#commit=$_commit"
+  0001-meson-support-explicit-GID.patch
+  0002-meson-support-os_type-artix-and-detect-Artix-Linux.patch
+  99-artix.rules
+)
+b2sums=('SKIP'
+        '4ff895c531282dc4ccaa3248f33916b8cf000c6d3222b2aac0ace4d1791055fe1851c0f13a3ce34d57662645f66179b901793efea889455171584a5ffefc5e4e'
+        '1c756e9e494def6fb69c9d88d4b70e5717cf81d8cc6a1bb8782ae0b1c86e046f718f608c56c15e2f62d409d273c9a5dd243ce01a7f0b0d04a4b5753fb28ff9d1'
+        'cacdece40f519ce2f2a4b06d31e75e92ed9496c18d4b1090b91a3c8d19f49aff41949b1bdda6e3c0b049b0ca74bbf164023044cf1ec8de6a24065bcda0d42d1f')
+
+prepare() {
+  cd polkit
+
+  # Artix-specific adjustments
+  git apply -3 ../0001-meson-support-explicit-GID.patch
+  git apply -3 ../0002-meson-support-os_type-artix-and-detect-Artix-Linux.patch
+}
+
+build() {
+  local meson_options=(
+    -D examples=true
+    -D gettext=true
+    -D gtk_doc=true
+    -D man=true
+    -D tests=true
+    -D session_tracking=sglogin
+    -D os_type=artix
+  )
+
+  meson setup polkit build --prefix=/usr --libdir=lib --libexecdir=lib \
+    --sbindir=bin --buildtype=plain --auto-features=enabled --wrap-mode=nodownload \
+    -D b_pie=true "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs -t 3
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+
+  install -m0644 "${srcdir}"/99-artix.rules "${pkgdir}"/etc/polkit-1/rules.d
+  install -Dm644 polkit/COPYING "$pkgdir/usr/share/licenses/$pkgname/COPYING"
+  rm -r "$pkgdir/usr/lib/systemd"
+
+}
+
+# vim:set sw=2 sts=-1 et:

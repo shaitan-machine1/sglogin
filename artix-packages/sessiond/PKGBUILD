@@ -1,6 +1,6 @@
 pkgname=sessiond
 pkgver=0.2.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Local session SDK, PAM modules and daemon-owned session lifecycle'
 arch=(x86_64)
 url='https://github.com/shaitan-machine1/sessiond'
@@ -9,7 +9,7 @@ provides=('session-manager' 'libsessiond.so')
 depends=(dbus gcc-libs glibc pam user-service-manager)
 makedepends=(cargo git rust)
 backup=('etc/sessiond.conf' 'etc/pam.d/sessiond-session' 'etc/pam.d/sessiond-user')
-_commit=7b2038f3bc43c3c1c9ba030762672668a69b3f66
+_commit=7f97a43165c6865baa80800748e554c94b4359aa
 source=("git+https://github.com/shaitan-machine1/sessiond.git#commit=$_commit")
 sha256sums=('SKIP')
 

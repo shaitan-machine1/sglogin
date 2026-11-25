@@ -1,0 +1,60 @@
+From 76484955737a4745bed9be75bfb68dc68e13b4df Mon Sep 17 00:00:00 2001
+From: artoo <artoo@artixlinux.org>
+Date: Mon, 19 Oct 2026 00:12:47 +0200
+Subject: [PATCH] meson support os_type artix and detect Artix Linux
+
+---
+ meson.build       | 13 ++++++++++---
+ meson_options.txt |  2 +-
+ 2 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 86a4196..efb60c9 100644
+--- a/meson.build
++++ b/meson.build
+@@ -301,6 +301,7 @@ if os_type == ''
+     ['debian', '/etc/debian_version'],
+     ['gentoo', '/etc/gentoo-release'],
+     ['pardus', '/etc/pardus-release'],
++    ['artix', '/etc/artix-release'],
+     ['lfs', '/etc/lfs-release'],
+   ]
+ 
+@@ -318,14 +319,20 @@ endif
+ 
+ # The default UID differs between distributions, set it accordingly if not specified
+ polkitd_uid = get_option('polkitd_uid')
+-if polkitd_uid == ''
+-  polkitd_uid = '-'
++if os_type == 'artix'
++    polkitd_uid = '102'
++else
++    polkitd_uid = '-'
+ endif
+ 
+ # The default GID differs between distributions, set it accordingly if not specified
+ polkitd_gid = get_option('polkitd_gid')
+ if polkitd_gid == ''
+-  polkitd_gid = '-'
++  if os_type == 'artix'
++    polkitd_gid = '102'
++  else
++    polkitd_gid = '-'
++  endif
+ endif
+ 
+ # The default privileged group differs between distributions, set it accordingly if not specified
+diff --git a/meson_options.txt b/meson_options.txt
+index 4295a97..305c25b 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -10,5 +10,5 @@
+ option('authfw', type: 'combo', choices: ['pam', 'shadow', 'bsdauth'], value: 'pam', description: 'Authentication framework (pam/shadow)')
+-option('os_type', type: 'combo', choices: ['redhat', 'suse', 'gentoo', 'pardus', 'solaris', 'netbsd', 'lfs', 'openembedded', 'debian', ''], value: '', description: 'distribution or OS')
++option('os_type', type: 'combo', choices: ['redhat', 'suse', 'gentoo', 'pardus', 'solaris', 'netbsd', 'lfs', 'openembedded', 'debian', 'artix', ''], value: '', description: 'distribution or OS')
+ 
+ option('pam_include', type: 'string', value: '', description: 'pam file to include')
+ option('pam_module_dir', type: 'string', value: '', description: 'directory to install PAM security module')
+-- 
+2.56.0
+
